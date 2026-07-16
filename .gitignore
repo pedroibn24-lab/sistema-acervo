@@ -17,11 +17,22 @@ dist-ssr
 .env.*
 !.env.example
 
+# Supabase CLI — estado local da máquina. As migrations e o config.toml SIM vão pro git.
+supabase/.temp
+supabase/.branches
+
+# Caches de build / lint
+.eslintcache
+coverage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
