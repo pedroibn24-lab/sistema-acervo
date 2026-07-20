@@ -29,6 +29,12 @@ export default function AppLayout() {
               <NavLink to="/perfumes" className={linkClass}>
                 Perfumes
               </NavLink>
+              <NavLink to="/clientes" className={linkClass}>
+                Clientes
+              </NavLink>
+              <NavLink to="/estoque" className={linkClass}>
+                Estoque
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3">

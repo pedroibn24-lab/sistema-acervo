@@ -5,6 +5,8 @@ import RequireAuth from './components/RequireAuth'
 import Login from './routes/Login'
 import Dashboard from './routes/Dashboard'
 import Perfumes from './routes/Perfumes'
+import Clientes from './routes/Clientes'
+import Estoque from './routes/Estoque'
 import AppLayout from './components/AppLayout'
 import RouteError from './components/RouteError'
 
@@ -26,6 +28,8 @@ const router = createBrowserRouter([
     children: [
       { path: '/dashboard', element: <Dashboard /> },
       { path: '/perfumes', element: <Perfumes /> },
+      { path: '/clientes', element: <Clientes /> },
+      { path: '/estoque', element: <Estoque /> },
     ],
   },
 ])
