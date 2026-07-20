@@ -2,7 +2,13 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { useClientes } from '../features/clientes/useClientes'
 import { usePerfumes } from '../features/perfumes/usePerfumes'
-import { useSacolinhaAberta, useItensSacolinha, useVenderDecant } from '../features/vendas/useVendas'
+import {
+  useSacolinhaAberta,
+  useItensSacolinha,
+  useVenderDecant,
+  useApagarItem,
+  useMarcarPagoPerfume,
+} from '../features/vendas/useVendas'
 import Button from '../components/ui/Button'
 
 const MLS = [3, 5, 10, 20]
@@ -31,6 +37,58 @@ function PrecisaCadastro({ tipo, para }) {
   )
 }
 
+/** Uma linha de item da sacolinha: status de pagamento e desfazer (com confirmação). */
+function ItemRow({ item, onApagar, onTogglePago, ocupado }) {
+  const [confirmando, setConfirmando] = useState(false)
+  const pago = item.status_pagamento_perfume === 'pago'
+
+  return (
+    <li className="card flex items-center justify-between gap-3 p-4 text-sm">
+      <span className="text-ink">
+        {item.perfumes?.nome ?? 'Perfume'} · {item.ml}ml {item.tipo === 'apc' ? '(APC)' : ''}
+      </span>
+      <div className="flex items-center gap-3">
+        <span className="text-muted">{brl(item.preco_venda)}</span>
+        <button
+          type="button"
+          onClick={() => onTogglePago(item.id, !pago)}
+          disabled={ocupado}
+          className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+            pago ? 'bg-gold/15 text-gold' : 'border border-border text-muted hover:text-ink'
+          }`}
+        >
+          {pago ? '✓ Pago' : 'Pendente'}
+        </button>
+        {confirmando ? (
+          <span className="flex items-center gap-2 text-xs">
+            <span className="text-muted">Desfazer?</span>
+            <button
+              type="button"
+              onClick={() => onApagar(item.id)}
+              disabled={ocupado}
+              className="font-medium text-danger"
+            >
+              Sim
+            </button>
+            <button type="button" onClick={() => setConfirmando(false)} className="text-muted">
+              Não
+            </button>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmando(true)}
+            aria-label="Desfazer venda"
+            className="text-muted transition-colors hover:text-danger"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    </li>
+  )
+}
+
 /** Tela de vendas: vende decants para a sacolinha de um cliente (trava do APC ao vivo). */
 export default function Vendas() {
   const clientes = useClientes()
@@ -44,6 +102,8 @@ export default function Vendas() {
   const sacolinha = useSacolinhaAberta(clienteId)
   const itens = useItensSacolinha(sacolinha.data?.id)
   const vender = useVenderDecant()
+  const apagar = useApagarItem()
+  const marcarPago = useMarcarPagoPerfume()
 
   async function onVender(e) {
     e.preventDefault()
@@ -168,13 +228,13 @@ export default function Vendas() {
           {s?.id && !itens.isPending && (itens.data?.length ?? 0) > 0 && (
             <ul className="mt-6 grid gap-2">
               {itens.data.map((it) => (
-                <li key={it.id} className="card flex items-center justify-between p-4 text-sm">
-                  <span className="text-ink">
-                    {it.perfumes?.nome ?? 'Perfume'} · {it.ml}ml{' '}
-                    {it.tipo === 'apc' ? '(APC)' : ''}
-                  </span>
-                  <span className="text-muted">{brl(it.preco_venda)}</span>
-                </li>
+                <ItemRow
+                  key={it.id}
+                  item={it}
+                  onApagar={(id) => apagar.mutate(id)}
+                  onTogglePago={(id, pago) => marcarPago.mutate({ id, pago })}
+                  ocupado={apagar.isPending || marcarPago.isPending}
+                />
               ))}
             </ul>
           )}

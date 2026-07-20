@@ -29,7 +29,7 @@ export function useItensSacolinha(sacolinhaId) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('vendas_itens')
-        .select('id, tipo, ml, frasco_ml, preco_venda, perfumes(nome)')
+        .select('id, tipo, ml, frasco_ml, preco_venda, status_pagamento_perfume, perfumes(nome)')
         .eq('sacolinha_id', sacolinhaId)
         .order('created_at', { ascending: false })
         .range(0, 99)
@@ -81,6 +81,44 @@ export function useVenderDecant() {
       queryClient.invalidateQueries({ queryKey: ['sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+    },
+  })
+}
+
+/**
+ * Apaga um item de venda. Isso aciona o ESTORNO no banco (trigger AFTER DELETE):
+ * o saldo do perfume volta e o frasco retorna ao estoque, automaticamente.
+ */
+export function useApagarItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('vendas_itens').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['perfumes'] })
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+    },
+  })
+}
+
+/** Marca o pagamento do perfume de um item como pago ou pendente. */
+export function useMarcarPagoPerfume() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, pago }) => {
+      const { error } = await supabase
+        .from('vendas_itens')
+        .update({ status_pagamento_perfume: pago ? 'pago' : 'pendente' })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
     },
   })
