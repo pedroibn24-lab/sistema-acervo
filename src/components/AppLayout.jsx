@@ -26,6 +26,9 @@ export default function AppLayout() {
               <NavLink to="/dashboard" className={linkClass}>
                 Painel
               </NavLink>
+              <NavLink to="/vendas" className={linkClass}>
+                Vendas
+              </NavLink>
               <NavLink to="/perfumes" className={linkClass}>
                 Perfumes
               </NavLink>

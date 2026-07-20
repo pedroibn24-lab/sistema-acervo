@@ -4,6 +4,7 @@ import { AuthProvider } from './features/auth/AuthProvider'
 import RequireAuth from './components/RequireAuth'
 import Login from './routes/Login'
 import Dashboard from './routes/Dashboard'
+import Vendas from './routes/Vendas'
 import Perfumes from './routes/Perfumes'
 import Clientes from './routes/Clientes'
 import Estoque from './routes/Estoque'
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       { path: '/dashboard', element: <Dashboard /> },
+      { path: '/vendas', element: <Vendas /> },
       { path: '/perfumes', element: <Perfumes /> },
       { path: '/clientes', element: <Clientes /> },
       { path: '/estoque', element: <Estoque /> },
