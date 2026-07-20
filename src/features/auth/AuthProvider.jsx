@@ -1,14 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-
-/**
- * @typedef {object} AuthValue
- * @property {import('@supabase/supabase-js').Session | null} session
- * @property {boolean} loading
- */
-
-/** @type {React.Context<AuthValue | null>} */
-const AuthContext = createContext(null)
+import { AuthContext } from './useAuth'
 
 /** Provê a sessão do usuário logado para o app inteiro. */
 export function AuthProvider({ children }) {
@@ -33,11 +25,4 @@ export function AuthProvider({ children }) {
   }, [])
 
   return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>
-}
-
-/** @returns {AuthValue} */
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth precisa estar dentro de <AuthProvider>.')
-  return ctx
 }

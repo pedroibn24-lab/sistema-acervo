@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router'
-import { useAuth } from '../features/auth/AuthContext'
+import { useAuth } from '../features/auth/useAuth'
 
 /** Protege rotas: sem sessão válida, redireciona para o login. */
 export default function RequireAuth({ children }) {
