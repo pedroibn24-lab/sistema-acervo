@@ -99,3 +99,40 @@ export function useDeleteCliente() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTES_KEY }),
   })
 }
+
+/** Busca um cliente pelo id (para a tela de detalhe). */
+export function useCliente(id) {
+  return useQuery({
+    queryKey: ['cliente', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, nome, whatsapp, endereco')
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+/** Histórico de compras de um cliente: todos os itens de todas as sacolinhas dele. */
+export function useComprasCliente(clienteId) {
+  return useQuery({
+    queryKey: ['compras-cliente', clienteId],
+    enabled: !!clienteId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vendas_itens')
+        .select(
+          'id, tipo, ml, preco_venda, status_pagamento_perfume, created_at, perfumes(nome), sacolinhas!inner(status_envio)',
+        )
+        .eq('sacolinhas.cliente_id', clienteId)
+        .order('created_at', { ascending: false })
+        .range(0, 199)
+      if (error) throw error
+      return data
+    },
+  })
+}

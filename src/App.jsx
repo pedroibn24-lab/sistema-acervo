@@ -7,6 +7,7 @@ import Dashboard from './routes/Dashboard'
 import Vendas from './routes/Vendas'
 import Perfumes from './routes/Perfumes'
 import Clientes from './routes/Clientes'
+import ClienteDetalhe from './routes/ClienteDetalhe'
 import Estoque from './routes/Estoque'
 import AppLayout from './components/AppLayout'
 import RouteError from './components/RouteError'
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
       { path: '/vendas', element: <Vendas /> },
       { path: '/perfumes', element: <Perfumes /> },
       { path: '/clientes', element: <Clientes /> },
+      { path: '/clientes/:id', element: <ClienteDetalhe /> },
       { path: '/estoque', element: <Estoque /> },
     ],
   },

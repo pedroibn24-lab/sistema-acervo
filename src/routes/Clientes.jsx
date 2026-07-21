@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -178,6 +179,12 @@ export default function Clientes() {
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
+                  <Link
+                    to={`/clientes/${c.id}`}
+                    className="text-sm font-medium text-gold hover:underline"
+                  >
+                    Ver compras
+                  </Link>
                   <button
                     type="button"
                     onClick={() => abrirEdicao(c)}
