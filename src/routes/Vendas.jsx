@@ -137,6 +137,7 @@ export default function Vendas() {
     return <PrecisaCadastro tipo="perfume" para="perfumes" />
 
   const s = sacolinha.data
+  const qtdApc = (itens.data ?? []).filter((it) => it.tipo === 'apc').length
 
   return (
     <div>
@@ -173,7 +174,11 @@ export default function Vendas() {
             ) : s ? (
               <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
                 <span className="text-muted">
-                  Sacolinha: <span className="text-ink">{s.qtd_decants} decants</span>
+                  Sacolinha:{' '}
+                  <span className="text-ink">
+                    {s.qtd_decants} decants
+                    {qtdApc > 0 ? ` + ${qtdApc} APC` : ''}
+                  </span>
                 </span>
                 <span className="text-muted">
                   Total: <span className="text-ink">{brl(s.valor_itens)}</span>
