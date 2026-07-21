@@ -17,16 +17,30 @@ export function useEstoque() {
   })
 }
 
-/** Define a quantidade de um insumo (cria a linha se não existir). */
-export function useSetEstoque() {
+/**
+ * Adiciona `delta` frascos ao estoque de um tipo (soma em cima do que já existe).
+ * Lê o valor atual, soma e grava o novo total. Cria a linha se ainda não houver.
+ */
+export function useAddEstoque() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ tipo, quantidade }) => {
-      // upsert: se já existe a linha (owner_id, tipo), atualiza; senão, cria.
-      const { error } = await supabase
+    mutationFn: async ({ tipo, delta }) => {
+      // 1. lê o que já tem no estoque desse tipo (null = ainda não existe a linha)
+      const { data: atual, error: e1 } = await supabase
         .from('estoque_insumos')
-        .upsert({ tipo, quantidade }, { onConflict: 'owner_id,tipo' })
-      if (error) throw error
+        .select('quantidade')
+        .eq('tipo', tipo)
+        .maybeSingle()
+      if (e1) throw e1
+
+      // 2. soma o que foi adicionado (nunca deixa negativo)
+      const novaQtd = Math.max(0, (atual?.quantidade ?? 0) + delta)
+
+      // 3. grava: se já existe a linha (owner_id, tipo), atualiza; senão, cria.
+      const { error: e2 } = await supabase
+        .from('estoque_insumos')
+        .upsert({ tipo, quantidade: novaQtd }, { onConflict: 'owner_id,tipo' })
+      if (e2) throw e2
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ESTOQUE_KEY }),
   })

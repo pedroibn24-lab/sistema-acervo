@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useEstoque, useSetEstoque } from '../features/estoque/useEstoque'
+import { useEstoque, useAddEstoque } from '../features/estoque/useEstoque'
 import Button from '../components/ui/Button'
 
 const FRASCOS = [
@@ -7,9 +7,20 @@ const FRASCOS = [
   { tipo: 'frasco_20ml', label: 'Frasco 20ml' },
 ]
 
-/** Uma linha do estoque: mostra o atual e permite definir uma nova quantidade. */
-function LinhaEstoque({ tipo, label, atual, onSalvar, salvando }) {
-  const [valor, setValor] = useState(String(atual ?? 0))
+/** Uma linha do estoque: mostra o atual e adiciona a quantidade comprada. */
+function LinhaEstoque({ tipo, label, atual, onAdicionar, salvando }) {
+  const [valor, setValor] = useState('')
+
+  async function adicionar() {
+    const qtd = Math.floor(Number(valor) || 0)
+    if (qtd < 1) return
+    try {
+      await onAdicionar(tipo, qtd)
+      setValor('') // limpa o campo só se deu certo
+    } catch {
+      // o erro é mostrado pela tela; mantém o valor digitado pra tentar de novo
+    }
+  }
 
   return (
     <div className="card flex items-center justify-between gap-4 p-5">
@@ -20,14 +31,17 @@ function LinhaEstoque({ tipo, label, atual, onSalvar, salvando }) {
       <div className="flex items-center gap-2">
         <input
           type="number"
-          min="0"
+          min="1"
+          step="1"
+          placeholder="Comprei…"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          className="h-11 w-24 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
-          aria-label={`Quantidade de ${label}`}
+          onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+          className="h-11 w-28 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
+          aria-label={`Quantos frascos de ${label} adicionar`}
         />
-        <Button onClick={() => onSalvar(tipo, Math.max(0, Number(valor) || 0))} disabled={salvando}>
-          Salvar
+        <Button onClick={adicionar} disabled={salvando || Math.floor(Number(valor) || 0) < 1}>
+          Adicionar
         </Button>
       </div>
     </div>
@@ -37,17 +51,18 @@ function LinhaEstoque({ tipo, label, atual, onSalvar, salvando }) {
 /** Tela de estoque de frascos vazios (o que a venda de decant debita). */
 export default function Estoque() {
   const { data: estoque, isPending, isError, refetch } = useEstoque()
-  const setEstoque = useSetEstoque()
+  const addEstoque = useAddEstoque()
 
-  function salvar(tipo, quantidade) {
-    setEstoque.mutate({ tipo, quantidade })
+  function adicionar(tipo, delta) {
+    return addEstoque.mutateAsync({ tipo, delta })
   }
 
   return (
     <div>
       <h1 className="font-serif text-4xl leading-tight text-ink">Estoque de frascos</h1>
       <p className="mt-2 text-muted">
-        Quantos frascos vazios você tem. Cada venda de decant desconta um frasco automaticamente.
+        Quantos frascos vazios você tem. Digite quantos você comprou e clique em Adicionar — o valor
+        soma ao estoque. Cada venda de decant desconta um frasco automaticamente.
       </p>
 
       <div className="mt-8">
@@ -76,14 +91,14 @@ export default function Estoque() {
                 tipo={f.tipo}
                 label={f.label}
                 atual={estoque[f.tipo] ?? 0}
-                onSalvar={salvar}
-                salvando={setEstoque.isPending}
+                onAdicionar={adicionar}
+                salvando={addEstoque.isPending}
               />
             ))}
           </div>
         )}
 
-        {setEstoque.isError && (
+        {addEstoque.isError && (
           <p className="mt-3 text-sm text-danger" role="alert">
             Não foi possível salvar o estoque. Tente de novo.
           </p>
