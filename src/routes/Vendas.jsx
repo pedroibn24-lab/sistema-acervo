@@ -90,6 +90,24 @@ function ItemRow({ item, onApagar, onTogglePago, ocupado }) {
   )
 }
 
+/**
+ * Traduz o erro do banco numa frase que a pessoa entende.
+ * O caso mais comum e mais críptico é o estoque de frascos negativo:
+ * a venda debita 1 frasco e a regra `chk_estoque_nao_negativo` recusa se não há saldo.
+ * @param {{ code?: string, message?: string }} err
+ * @param {number | string} ml  tamanho do decant sendo vendido (pra dizer qual frasco falta)
+ */
+function mensagemDeErro(err, ml) {
+  const texto = String(err?.message ?? '')
+  const semEstoque = err?.code === '23514' || texto.includes('chk_estoque_nao_negativo')
+  if (semEstoque) {
+    const frasco = Number(ml) <= 5 ? '5ml' : '20ml'
+    return `Sem frasco de ${frasco} no estoque. Adicione frascos na tela Estoque antes de vender este decant.`
+  }
+  // A trava do APC já vem com uma mensagem pronta pro usuário; o resto é genérico.
+  return err?.message || 'Não foi possível registrar a venda.'
+}
+
 /** Tela de vendas: vende decants para a sacolinha de um cliente (trava do APC ao vivo). */
 export default function Vendas() {
   const clientes = useClientes()
@@ -115,8 +133,7 @@ export default function Vendas() {
       await vender.mutateAsync({ clienteId, perfumeId, ml: Number(ml) })
       // mantém cliente/perfume/tamanho selecionados pra vender vários em sequência
     } catch (err) {
-      // A mensagem da trava/estoque vem do banco e é feita para o usuário ler.
-      setErro(err?.message || 'Não foi possível registrar a venda.')
+      setErro(mensagemDeErro(err, ml))
     }
   }
 
