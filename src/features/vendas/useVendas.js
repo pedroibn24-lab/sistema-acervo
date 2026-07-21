@@ -1,8 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 
-/** Acha a sacolinha ABERTA do cliente ou cria uma nova. Devolve o id dela. */
-async function getOrCreateSacolinhaId(clienteId) {
+/**
+ * Acha a sacolinha ABERTA do cliente ou cria uma nova.
+ * Devolve { id, criada } — `criada` diz se acabou de ser criada agora (pra poder
+ * desfazer a sacolinha se a venda em seguida falhar, evitando sacolinha órfã vazia).
+ */
+async function getOrCreateSacolinha(clienteId) {
   const { data: existente, error: e1 } = await supabase
     .from('sacolinhas')
     .select('id')
@@ -10,7 +14,7 @@ async function getOrCreateSacolinhaId(clienteId) {
     .neq('status_envio', 'enviado')
     .maybeSingle()
   if (e1) throw e1
-  if (existente) return existente.id
+  if (existente) return { id: existente.id, criada: false }
 
   const { data: nova, error: e2 } = await supabase
     .from('sacolinhas')
@@ -18,7 +22,7 @@ async function getOrCreateSacolinhaId(clienteId) {
     .select('id')
     .single()
   if (e2) throw e2
-  return nova.id
+  return { id: nova.id, criada: true }
 }
 
 /** Resumo da sacolinha ABERTA de um cliente (ou null se não tem). */
@@ -68,12 +72,16 @@ export function useVenderDecant() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ clienteId, perfumeId, ml }) => {
-      const sacolinhaId = await getOrCreateSacolinhaId(clienteId)
+      const { id: sacolinhaId, criada } = await getOrCreateSacolinha(clienteId)
       // registra a venda (o banco valida a trava e debita o estoque)
       const { error } = await supabase
         .from('vendas_itens')
         .insert({ sacolinha_id: sacolinhaId, perfume_id: perfumeId, tipo: 'decant', ml })
-      if (error) throw error
+      if (error) {
+        // venda falhou: se a sacolinha acabou de ser criada, desfaz (evita órfã vazia)
+        if (criada) await supabase.from('sacolinhas').delete().eq('id', sacolinhaId)
+        throw error
+      }
       return { sacolinhaId }
     },
     onSuccess: () => {
@@ -94,12 +102,15 @@ export function useVenderApc() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ clienteId, perfumeId }) => {
-      const sacolinhaId = await getOrCreateSacolinhaId(clienteId)
+      const { id: sacolinhaId, criada } = await getOrCreateSacolinha(clienteId)
       // APC: só o tipo. O trigger preenche ml/preço e marca apc_vendido.
       const { error } = await supabase
         .from('vendas_itens')
         .insert({ sacolinha_id: sacolinhaId, perfume_id: perfumeId, tipo: 'apc' })
-      if (error) throw error
+      if (error) {
+        if (criada) await supabase.from('sacolinhas').delete().eq('id', sacolinhaId)
+        throw error
+      }
       return { sacolinhaId }
     },
     onSuccess: () => {
