@@ -1,6 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 
+/** Acha a sacolinha ABERTA do cliente ou cria uma nova. Devolve o id dela. */
+async function getOrCreateSacolinhaId(clienteId) {
+  const { data: existente, error: e1 } = await supabase
+    .from('sacolinhas')
+    .select('id')
+    .eq('cliente_id', clienteId)
+    .neq('status_envio', 'enviado')
+    .maybeSingle()
+  if (e1) throw e1
+  if (existente) return existente.id
+
+  const { data: nova, error: e2 } = await supabase
+    .from('sacolinhas')
+    .insert({ cliente_id: clienteId })
+    .select('id')
+    .single()
+  if (e2) throw e2
+  return nova.id
+}
+
 /** Resumo da sacolinha ABERTA de um cliente (ou null se não tem). */
 export function useSacolinhaAberta(clienteId) {
   return useQuery({
@@ -48,33 +68,38 @@ export function useVenderDecant() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ clienteId, perfumeId, ml }) => {
-      // 1. acha a sacolinha aberta do cliente
-      const { data: existente, error: e1 } = await supabase
-        .from('sacolinhas')
-        .select('id')
-        .eq('cliente_id', clienteId)
-        .neq('status_envio', 'enviado')
-        .maybeSingle()
-      if (e1) throw e1
-
-      let sacolinhaId = existente?.id
-      // 2. se não tem, cria uma
-      if (!sacolinhaId) {
-        const { data: nova, error: e2 } = await supabase
-          .from('sacolinhas')
-          .insert({ cliente_id: clienteId })
-          .select('id')
-          .single()
-        if (e2) throw e2
-        sacolinhaId = nova.id
-      }
-
-      // 3. registra a venda (o banco valida a trava e debita o estoque)
-      const { error: e3 } = await supabase
+      const sacolinhaId = await getOrCreateSacolinhaId(clienteId)
+      // registra a venda (o banco valida a trava e debita o estoque)
+      const { error } = await supabase
         .from('vendas_itens')
         .insert({ sacolinha_id: sacolinhaId, perfume_id: perfumeId, tipo: 'decant', ml })
-      if (e3) throw e3
+      if (error) throw error
+      return { sacolinhaId }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['perfumes'] })
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+    },
+  })
+}
 
+/**
+ * Vende o APC (Apresentação Completa): o frasco original + todo o ml restante,
+ * para o comprador único. O banco preenche o ml e o preço sozinho e marca o
+ * frasco como esgotado (apc_vendido) — só é possível uma vez por perfume.
+ */
+export function useVenderApc() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ clienteId, perfumeId }) => {
+      const sacolinhaId = await getOrCreateSacolinhaId(clienteId)
+      // APC: só o tipo. O trigger preenche ml/preço e marca apc_vendido.
+      const { error } = await supabase
+        .from('vendas_itens')
+        .insert({ sacolinha_id: sacolinhaId, perfume_id: perfumeId, tipo: 'apc' })
+      if (error) throw error
       return { sacolinhaId }
     },
     onSuccess: () => {

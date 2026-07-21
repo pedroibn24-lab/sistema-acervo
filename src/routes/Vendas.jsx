@@ -6,6 +6,7 @@ import {
   useSacolinhaAberta,
   useItensSacolinha,
   useVenderDecant,
+  useVenderApc,
   useApagarItem,
   useMarcarPagoPerfume,
 } from '../features/vendas/useVendas'
@@ -102,6 +103,7 @@ export default function Vendas() {
   const sacolinha = useSacolinhaAberta(clienteId)
   const itens = useItensSacolinha(sacolinha.data?.id)
   const vender = useVenderDecant()
+  const venderApc = useVenderApc()
   const apagar = useApagarItem()
   const marcarPago = useMarcarPagoPerfume()
 
@@ -115,6 +117,17 @@ export default function Vendas() {
     } catch (err) {
       // A mensagem da trava/estoque vem do banco e é feita para o usuário ler.
       setErro(err?.message || 'Não foi possível registrar a venda.')
+    }
+  }
+
+  async function onVenderApc() {
+    setErro('')
+    try {
+      await venderApc.mutateAsync({ clienteId, perfumeId })
+      setPerfumeId('')
+      setMl('')
+    } catch (err) {
+      setErro(err?.message || 'Não foi possível vender o APC.')
     }
   }
 
@@ -224,6 +237,19 @@ export default function Vendas() {
               </p>
             )}
           </form>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button
+              variant="ghost"
+              onClick={onVenderApc}
+              disabled={!perfumeId || venderApc.isPending}
+            >
+              {venderApc.isPending ? 'Vendendo APC…' : 'Vender APC do perfume'}
+            </Button>
+            <span className="text-xs text-muted">
+              Vende o frasco + todo o ml restante do perfume selecionado (encerra o frasco).
+            </span>
+          </div>
 
           {s?.id && !itens.isPending && (itens.data?.length ?? 0) > 0 && (
             <ul className="mt-6 grid gap-2">
