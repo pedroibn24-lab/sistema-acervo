@@ -113,8 +113,7 @@ export default function Vendas() {
     setErro('')
     try {
       await vender.mutateAsync({ clienteId, perfumeId, ml: Number(ml) })
-      setPerfumeId('')
-      setMl('')
+      // mantém cliente/perfume/tamanho selecionados pra vender vários em sequência
     } catch (err) {
       // A mensagem da trava/estoque vem do banco e é feita para o usuário ler.
       setErro(err?.message || 'Não foi possível registrar a venda.')
