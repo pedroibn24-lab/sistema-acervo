@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { usePerfumes, useAddPerfume, useDeletePerfume } from '../features/perfumes/usePerfumes'
+import {
+  usePerfumes,
+  useAddPerfume,
+  useFinalizarPerfume,
+  useDeletePerfume,
+} from '../features/perfumes/usePerfumes'
 import { perfumeFormSchema } from '../features/perfumes/schema'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -42,12 +47,68 @@ function comMascara(reg) {
   }
 }
 
+/**
+ * Botão de finalizar/reativar um frasco.
+ * - Finalizado: mostra "Reativar".
+ * - Ainda vendável: mostra "Finalizar" com confirmação (é uma ação séria).
+ * - Esgotado naturalmente (vendeu tudo): não mostra nada.
+ */
+function FinalizarButton({ finalizado, vendavel, disabled, onFinalizar, onReativar }) {
+  const [confirmando, setConfirmando] = useState(false)
+
+  if (finalizado) {
+    return (
+      <button
+        type="button"
+        onClick={onReativar}
+        disabled={disabled}
+        className="text-sm font-medium text-gold hover:underline"
+      >
+        Reativar
+      </button>
+    )
+  }
+
+  if (!vendavel) return null
+
+  if (confirmando) {
+    return (
+      <span className="flex items-center gap-2 text-sm">
+        <span className="text-muted">Finalizar?</span>
+        <button
+          type="button"
+          onClick={onFinalizar}
+          disabled={disabled}
+          className="font-medium text-danger"
+        >
+          Sim
+        </button>
+        <button type="button" onClick={() => setConfirmando(false)} className="text-muted">
+          Não
+        </button>
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirmando(true)}
+      disabled={disabled}
+      className="text-sm font-medium text-muted transition-colors hover:text-ink"
+    >
+      Finalizar
+    </button>
+  )
+}
+
 /** Tela de perfumes: cadastro + lista, com dados reais do banco. */
 export default function Perfumes() {
   const [aberto, setAberto] = useState(false)
   const [erroDelete, setErroDelete] = useState('')
   const { data: perfumes, isPending, isError, refetch } = usePerfumes()
   const addPerfume = useAddPerfume()
+  const finalizarPerfume = useFinalizarPerfume()
   const deletePerfume = useDeletePerfume()
 
   const {
@@ -84,6 +145,16 @@ export default function Perfumes() {
           : 'Não foi possível apagar. Tente de novo.',
       )
     }
+  }
+
+  function finalizar(id) {
+    setErroDelete('')
+    finalizarPerfume.mutate({ id, finalizar: true })
+  }
+
+  function reativar(id) {
+    setErroDelete('')
+    finalizarPerfume.mutate({ id, finalizar: false })
   }
 
   return (
@@ -173,6 +244,11 @@ export default function Perfumes() {
             {erroDelete}
           </p>
         )}
+        {finalizarPerfume.isError && (
+          <p className="mb-3 text-sm text-danger" role="alert">
+            Não foi possível atualizar o perfume. Tente de novo.
+          </p>
+        )}
         {isPending ? (
           <div className="grid gap-3">
             {[0, 1, 2].map((i) => (
@@ -206,7 +282,10 @@ export default function Perfumes() {
         ) : (
           <ul className="grid gap-3">
             {perfumes.map((p) => {
+              const finalizado = !!p.finalizado_em
               const s = SITUACAO[p.situacao] ?? { label: p.situacao, cls: 'text-muted' }
+              const label = finalizado ? 'Finalizado' : s.label
+              const vendavel = p.pode_vender_decant || p.pode_vender_apc
               return (
                 <li key={p.id} className="card flex items-center justify-between gap-4 p-5">
                   <div>
@@ -218,8 +297,15 @@ export default function Perfumes() {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm text-ink">{p.ml_livres_decants}ml livres</p>
-                      <p className={`text-xs uppercase tracking-wider ${s.cls}`}>{s.label}</p>
+                      <p className={`text-xs uppercase tracking-wider ${s.cls}`}>{label}</p>
                     </div>
+                    <FinalizarButton
+                      finalizado={finalizado}
+                      vendavel={vendavel}
+                      disabled={finalizarPerfume.isPending}
+                      onFinalizar={() => finalizar(p.id)}
+                      onReativar={() => reativar(p.id)}
+                    />
                     <DeleteButton
                       onConfirm={() => apagarPerfume(p.id)}
                       disabled={deletePerfume.isPending}

@@ -11,7 +11,7 @@ export function usePerfumes() {
       const { data, error } = await supabase
         .from('vw_perfumes_saldo')
         .select(
-          'id, nome, marca, volume_total_ml, tamanho_apc_ml, ml_vendidos_decants, ml_livres_decants, apc_ml_atual, situacao, pode_vender_decant, pode_vender_apc',
+          'id, nome, marca, volume_total_ml, tamanho_apc_ml, ml_vendidos_decants, ml_livres_decants, apc_ml_atual, situacao, pode_vender_decant, pode_vender_apc, finalizado_em',
         )
         .order('created_at', { ascending: false })
         .range(0, 49)
@@ -46,6 +46,27 @@ export function useAddPerfume() {
       queryClient.invalidateQueries({ queryKey: PERFUMES_KEY })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
     },
+  })
+}
+
+/**
+ * Finaliza (encerra) um perfume ou reativa um finalizado.
+ * Finalizar: marca como esgotado mesmo com ml sobrando — não vende mais nada
+ * dele e não gera faturamento. Reativar: limpa a marca e volta a vender.
+ * @typedef {{ id: string, finalizar: boolean }} FinalizarArgs
+ */
+export function useFinalizarPerfume() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    /** @param {FinalizarArgs} args */
+    mutationFn: async ({ id, finalizar }) => {
+      const { error } = await supabase
+        .from('perfumes')
+        .update({ finalizado_em: finalizar ? new Date().toISOString() : null })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PERFUMES_KEY }),
   })
 }
 
