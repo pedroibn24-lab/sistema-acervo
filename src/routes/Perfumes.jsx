@@ -14,6 +14,34 @@ const SITUACAO = {
   esgotado: { label: 'Esgotado', cls: 'text-muted' },
 }
 
+/**
+ * Máscara de dinheiro: recebe o que foi digitado e devolve no formato brasileiro.
+ * Formata pela regra dos centavos — os 2 últimos dígitos são os centavos.
+ * Ex.: "450" -> "4,50"   |   "150000" -> "1.500,00"
+ * @param {string} valor
+ */
+function mascaraDinheiro(valor) {
+  const digitos = String(valor).replace(/\D/g, '') // mantém só os números
+  if (digitos === '') return ''
+  const numero = Number(digitos) / 100 // os 2 últimos viram centavos
+  return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+/**
+ * Embrulha o register do react-hook-form para aplicar a máscara a cada tecla:
+ * formata o valor e repassa o texto já formatado para o formulário.
+ * @param {{ onChange: (e: any) => void }} reg  o retorno de register('campo')
+ */
+function comMascara(reg) {
+  return {
+    ...reg,
+    onChange: (e) => {
+      e.target.value = mascaraDinheiro(e.target.value)
+      reg.onChange(e)
+    },
+  }
+}
+
 /** Tela de perfumes: cadastro + lista, com dados reais do banco. */
 export default function Perfumes() {
   const [aberto, setAberto] = useState(false)
@@ -111,18 +139,18 @@ export default function Perfumes() {
           <Input
             id="preco_custo_total"
             label="Custo total (R$)"
-            type="number"
-            step="0.01"
+            inputMode="numeric"
+            placeholder="0,00"
             error={errors.preco_custo_total?.message}
-            {...register('preco_custo_total')}
+            {...comMascara(register('preco_custo_total'))}
           />
           <Input
             id="valor_venda_por_ml"
             label="Venda por ml (R$)"
-            type="number"
-            step="0.01"
+            inputMode="numeric"
+            placeholder="0,00"
             error={errors.valor_venda_por_ml?.message}
-            {...register('valor_venda_por_ml')}
+            {...comMascara(register('valor_venda_por_ml'))}
           />
 
           {addPerfume.isError && (
