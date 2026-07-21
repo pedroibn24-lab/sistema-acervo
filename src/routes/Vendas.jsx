@@ -99,12 +99,19 @@ function ItemRow({ item, onApagar, onTogglePago, ocupado }) {
  */
 function mensagemDeErro(err, ml) {
   const texto = String(err?.message ?? '')
-  const semEstoque = err?.code === '23514' || texto.includes('chk_estoque_nao_negativo')
-  if (semEstoque) {
+
+  // Estoque de frascos zerado.
+  if (err?.code === '23514' || texto.includes('chk_estoque_nao_negativo')) {
     const frasco = Number(ml) <= 5 ? '5ml' : '20ml'
     return `Sem frasco de ${frasco} no estoque. Adicione frascos na tela Estoque antes de vender este decant.`
   }
-  // A trava do APC já vem com uma mensagem pronta pro usuário; o resto é genérico.
+
+  // Sem ml livres na área de decants (o banco chama de "TRAVA DO APC", mas pra pessoa
+  // o que importa é que o perfume não tem mais espaço pra vender esse tamanho).
+  if (texto.includes('TRAVA DO APC') || texto.includes('área de decants')) {
+    return `Este perfume não tem ml livres suficientes para vender ${ml}ml. A área de decants dele acabou.`
+  }
+
   return err?.message || 'Não foi possível registrar a venda.'
 }
 
