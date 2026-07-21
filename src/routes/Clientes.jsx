@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useClientes, useAddCliente } from '../features/clientes/useClientes'
+import { useClientes, useAddCliente, useDeleteCliente } from '../features/clientes/useClientes'
 import { clienteFormSchema } from '../features/clientes/schema'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import DeleteButton from '../components/ui/DeleteButton'
 
 /** Tela de clientes: cadastro + lista. */
 export default function Clientes() {
   const [aberto, setAberto] = useState(false)
+  const [erroDelete, setErroDelete] = useState('')
   const { data: clientes, isPending, isError, refetch } = useClientes()
   const addCliente = useAddCliente()
+  const deleteCliente = useDeleteCliente()
 
   const {
     register,
@@ -26,6 +29,19 @@ export default function Clientes() {
     await addCliente.mutateAsync(values)
     reset()
     setAberto(false)
+  }
+
+  async function apagarCliente(id) {
+    setErroDelete('')
+    try {
+      await deleteCliente.mutateAsync(id)
+    } catch (err) {
+      setErroDelete(
+        err?.code === '23503'
+          ? 'Não dá pra apagar este cliente: ele já tem sacolinha/vendas.'
+          : 'Não foi possível apagar. Tente de novo.',
+      )
+    }
   }
 
   return (
@@ -75,6 +91,11 @@ export default function Clientes() {
       )}
 
       <div className="mt-8">
+        {erroDelete && (
+          <p className="mb-3 text-sm text-danger" role="alert">
+            {erroDelete}
+          </p>
+        )}
         {isPending ? (
           <div className="grid gap-3">
             {[0, 1, 2].map((i) => (
@@ -108,7 +129,7 @@ export default function Clientes() {
         ) : (
           <ul className="grid gap-3">
             {clientes.map((c) => (
-              <li key={c.id} className="card flex items-center justify-between p-5">
+              <li key={c.id} className="card flex items-center justify-between gap-4 p-5">
                 <div>
                   <p className="font-serif text-xl text-ink">{c.nome}</p>
                   <p className="text-sm text-muted">
@@ -116,6 +137,11 @@ export default function Clientes() {
                     {c.endereco ? ` · ${c.endereco}` : ''}
                   </p>
                 </div>
+                <DeleteButton
+                  onConfirm={() => apagarCliente(c.id)}
+                  disabled={deleteCliente.isPending}
+                  label={`Apagar ${c.nome}`}
+                />
               </li>
             ))}
           </ul>

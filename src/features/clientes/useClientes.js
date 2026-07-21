@@ -39,3 +39,15 @@ export function useAddCliente() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTES_KEY }),
   })
 }
+
+/** Apaga um cliente. O banco bloqueia (restrict) se já houver sacolinha ligada. */
+export function useDeleteCliente() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('clientes').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTES_KEY }),
+  })
+}

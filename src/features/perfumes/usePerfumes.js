@@ -11,7 +11,7 @@ export function usePerfumes() {
       const { data, error } = await supabase
         .from('vw_perfumes_saldo')
         .select(
-          'id, nome, marca, volume_total_ml, tamanho_apc_ml, ml_vendidos_decants, ml_livres_decants, apc_ml_atual, situacao',
+          'id, nome, marca, volume_total_ml, tamanho_apc_ml, ml_vendidos_decants, ml_livres_decants, apc_ml_atual, situacao, pode_vender_decant, pode_vender_apc',
         )
         .order('created_at', { ascending: false })
         .range(0, 49)
@@ -41,6 +41,21 @@ export function useAddPerfume() {
         .single()
       if (error) throw error
       return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PERFUMES_KEY })
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+    },
+  })
+}
+
+/** Apaga um perfume. O banco bloqueia (restrict) se já houver vendas ligadas. */
+export function useDeletePerfume() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('perfumes').delete().eq('id', id)
+      if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PERFUMES_KEY })

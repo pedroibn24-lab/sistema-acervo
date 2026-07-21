@@ -1,22 +1,26 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { usePerfumes, useAddPerfume } from '../features/perfumes/usePerfumes'
+import { usePerfumes, useAddPerfume, useDeletePerfume } from '../features/perfumes/usePerfumes'
 import { perfumeFormSchema } from '../features/perfumes/schema'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import DeleteButton from '../components/ui/DeleteButton'
 
 const SITUACAO = {
   disponivel: { label: 'Disponível', cls: 'text-gold' },
-  travado_apc: { label: 'Travado (APC)', cls: 'text-muted' },
+  apc_vendido: { label: 'APC vendido · vende decant', cls: 'text-gold' },
+  so_apc: { label: 'Decants esgotados · só APC', cls: 'text-muted' },
   esgotado: { label: 'Esgotado', cls: 'text-muted' },
 }
 
 /** Tela de perfumes: cadastro + lista, com dados reais do banco. */
 export default function Perfumes() {
   const [aberto, setAberto] = useState(false)
+  const [erroDelete, setErroDelete] = useState('')
   const { data: perfumes, isPending, isError, refetch } = usePerfumes()
   const addPerfume = useAddPerfume()
+  const deletePerfume = useDeletePerfume()
 
   const {
     register,
@@ -39,6 +43,19 @@ export default function Perfumes() {
     await addPerfume.mutateAsync(values)
     reset()
     setAberto(false)
+  }
+
+  async function apagarPerfume(id) {
+    setErroDelete('')
+    try {
+      await deletePerfume.mutateAsync(id)
+    } catch (err) {
+      setErroDelete(
+        err?.code === '23503'
+          ? 'Não dá pra apagar este perfume: ele já tem vendas registradas.'
+          : 'Não foi possível apagar. Tente de novo.',
+      )
+    }
   }
 
   return (
@@ -123,6 +140,11 @@ export default function Perfumes() {
       )}
 
       <div className="mt-8">
+        {erroDelete && (
+          <p className="mb-3 text-sm text-danger" role="alert">
+            {erroDelete}
+          </p>
+        )}
         {isPending ? (
           <div className="grid gap-3">
             {[0, 1, 2].map((i) => (
@@ -158,16 +180,23 @@ export default function Perfumes() {
             {perfumes.map((p) => {
               const s = SITUACAO[p.situacao] ?? { label: p.situacao, cls: 'text-muted' }
               return (
-                <li key={p.id} className="card flex items-center justify-between p-5">
+                <li key={p.id} className="card flex items-center justify-between gap-4 p-5">
                   <div>
                     <p className="font-serif text-xl text-ink">{p.nome}</p>
                     <p className="text-sm text-muted">
                       {p.marca || 'Sem marca'} · {p.volume_total_ml}ml · APC {p.tamanho_apc_ml}ml
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-ink">{p.ml_livres_decants}ml livres</p>
-                    <p className={`text-xs uppercase tracking-wider ${s.cls}`}>{s.label}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm text-ink">{p.ml_livres_decants}ml livres</p>
+                      <p className={`text-xs uppercase tracking-wider ${s.cls}`}>{s.label}</p>
+                    </div>
+                    <DeleteButton
+                      onConfirm={() => apagarPerfume(p.id)}
+                      disabled={deletePerfume.isPending}
+                      label={`Apagar ${p.nome}`}
+                    />
                   </div>
                 </li>
               )

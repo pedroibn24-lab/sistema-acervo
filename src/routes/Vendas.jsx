@@ -106,6 +106,7 @@ export default function Vendas() {
   const venderApc = useVenderApc()
   const apagar = useApagarItem()
   const marcarPago = useMarcarPagoPerfume()
+  const perfumeSel = (perfumes.data ?? []).find((p) => p.id === perfumeId)
 
   async function onVender(e) {
     e.preventDefault()
@@ -242,12 +243,14 @@ export default function Vendas() {
             <Button
               variant="ghost"
               onClick={onVenderApc}
-              disabled={!perfumeId || venderApc.isPending}
+              disabled={!perfumeId || perfumeSel?.pode_vender_apc === false || venderApc.isPending}
             >
               {venderApc.isPending ? 'Vendendo APC…' : 'Vender APC do perfume'}
             </Button>
             <span className="text-xs text-muted">
-              Vende o frasco + todo o ml restante do perfume selecionado (encerra o frasco).
+              {perfumeSel && perfumeSel.pode_vender_apc === false
+                ? 'O APC deste perfume já foi vendido.'
+                : 'Vende a apresentação completa (o APC) — a quantidade reservada do perfume selecionado.'}
             </span>
           </div>
 
