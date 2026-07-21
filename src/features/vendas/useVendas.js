@@ -89,6 +89,7 @@ export function useVenderDecant() {
       queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['estoque'] })
     },
   })
 }
@@ -118,6 +119,7 @@ export function useVenderApc() {
       queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['estoque'] })
     },
   })
 }
@@ -138,6 +140,7 @@ export function useApagarItem() {
       queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['estoque'] })
     },
   })
 }
