@@ -14,6 +14,11 @@ import {
 import Button from '../components/ui/Button'
 
 const MLS = [3, 5, 10, 20]
+const FILTROS_PAGAMENTO = [
+  { valor: 'todos', label: 'Todos' },
+  { valor: 'pago', label: 'Pagos' },
+  { valor: 'pendente', label: 'Pendentes' },
+]
 const brl = (n) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n || 0))
 
@@ -127,6 +132,7 @@ export default function Vendas() {
   const [erro, setErro] = useState('')
   const [confirmandoEnvio, setConfirmandoEnvio] = useState(false)
   const [erroEnvio, setErroEnvio] = useState('')
+  const [filtroPagamento, setFiltroPagamento] = useState('todos')
 
   const sacolinha = useSacolinhaAberta(clienteId)
   const itens = useItensSacolinha(sacolinha.data?.id)
@@ -177,7 +183,12 @@ export default function Vendas() {
     return <PrecisaCadastro tipo="perfume" para="perfumes" />
 
   const s = sacolinha.data
-  const qtdApc = (itens.data ?? []).filter((it) => it.tipo === 'apc').length
+  const itensLista = itens.data ?? []
+  const qtdApc = itensLista.filter((it) => it.tipo === 'apc').length
+  const itensFiltrados =
+    filtroPagamento === 'todos'
+      ? itensLista
+      : itensLista.filter((it) => it.status_pagamento_perfume === filtroPagamento)
 
   return (
     <div>
@@ -196,6 +207,7 @@ export default function Vendas() {
             setErro('')
             setErroEnvio('')
             setConfirmandoEnvio(false)
+            setFiltroPagamento('todos')
           }}
           className={`mt-1.5 w-full ${selectCls}`}
         >
@@ -340,18 +352,47 @@ export default function Vendas() {
             </span>
           </div>
 
-          {s?.id && !itens.isPending && (itens.data?.length ?? 0) > 0 && (
-            <ul className="mt-6 grid gap-2">
-              {itens.data.map((it) => (
-                <ItemRow
-                  key={it.id}
-                  item={it}
-                  onApagar={(id) => apagar.mutate(id)}
-                  onTogglePago={(id, pago) => marcarPago.mutate({ id, pago })}
-                  ocupado={apagar.isPending || marcarPago.isPending}
-                />
-              ))}
-            </ul>
+          {s?.id && !itens.isPending && itensLista.length > 0 && (
+            <div className="mt-6">
+              <div className="mb-3 flex justify-end">
+                <div className="flex gap-1 rounded-lg border border-border p-1">
+                  {FILTROS_PAGAMENTO.map((f) => (
+                    <button
+                      key={f.valor}
+                      type="button"
+                      onClick={() => setFiltroPagamento(f.valor)}
+                      className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                        filtroPagamento === f.valor
+                          ? 'bg-surface-2 text-ink'
+                          : 'text-muted hover:text-ink'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {itensFiltrados.length === 0 ? (
+                <div className="card p-6 text-center">
+                  <p className="text-sm text-muted">
+                    Nenhum item {filtroPagamento === 'pago' ? 'pago' : 'pendente'} nesta sacolinha.
+                  </p>
+                </div>
+              ) : (
+                <ul className="grid gap-2">
+                  {itensFiltrados.map((it) => (
+                    <ItemRow
+                      key={it.id}
+                      item={it}
+                      onApagar={(id) => apagar.mutate(id)}
+                      onTogglePago={(id, pago) => marcarPago.mutate({ id, pago })}
+                      ocupado={apagar.isPending || marcarPago.isPending}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </>
       )}
