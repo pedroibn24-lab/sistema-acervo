@@ -1,7 +1,18 @@
+import { Suspense } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { supabase } from '../lib/supabase'
 import Brand from './Brand'
 import ThemeToggle from './ThemeToggle'
+
+/** Esqueleto cinza mostrado enquanto o pedaço da tela é baixado. */
+function CarregandoTela() {
+  return (
+    <div className="grid gap-4">
+      <div className="skeleton h-10 w-56" />
+      <div className="skeleton h-40" />
+    </div>
+  )
+}
 
 /** @param {{ isActive: boolean }} state */
 const linkClass = ({ isActive }) =>
@@ -53,7 +64,9 @@ export default function AppLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <Outlet />
+        <Suspense fallback={<CarregandoTela />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   )
