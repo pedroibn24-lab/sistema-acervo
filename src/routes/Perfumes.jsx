@@ -106,6 +106,8 @@ function FinalizarButton({ finalizado, vendavel, disabled, onFinalizar, onReativ
 export default function Perfumes() {
   const [aberto, setAberto] = useState(false)
   const [erroDelete, setErroDelete] = useState('')
+  const [busca, setBusca] = useState('')
+  const [campoBusca, setCampoBusca] = useState('nome') // 'nome' ou 'marca'
   const { data: perfumes, isPending, isError, refetch } = usePerfumes()
   const addPerfume = useAddPerfume()
   const finalizarPerfume = useFinalizarPerfume()
@@ -133,6 +135,13 @@ export default function Perfumes() {
     reset()
     setAberto(false)
   }
+
+  // Filtra pelo campo escolhido (nome ou marca), sem diferenciar maiúsculas.
+  const termoBusca = busca.trim().toLowerCase()
+  const perfumesFiltrados = (perfumes ?? []).filter((p) => {
+    if (!termoBusca) return true
+    return String(p[campoBusca] ?? '').toLowerCase().includes(termoBusca)
+  })
 
   async function apagarPerfume(id) {
     setErroDelete('')
@@ -280,42 +289,72 @@ export default function Perfumes() {
             </div>
           </div>
         ) : (
-          <ul className="grid gap-3">
-            {perfumes.map((p) => {
-              const finalizado = !!p.finalizado_em
-              const s = SITUACAO[p.situacao] ?? { label: p.situacao, cls: 'text-muted' }
-              const label = finalizado ? 'Finalizado' : s.label
-              const vendavel = p.pode_vender_decant || p.pode_vender_apc
-              return (
-                <li key={p.id} className="card flex items-center justify-between gap-4 p-5">
-                  <div>
-                    <p className="font-serif text-xl text-ink">{p.nome}</p>
-                    <p className="text-sm text-muted">
-                      {p.marca || 'Sem marca'} · {p.volume_total_ml}ml · APC {p.tamanho_apc_ml}ml
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm text-ink">{p.ml_livres_decants}ml livres</p>
-                      <p className={`text-xs uppercase tracking-wider ${s.cls}`}>{label}</p>
-                    </div>
-                    <FinalizarButton
-                      finalizado={finalizado}
-                      vendavel={vendavel}
-                      disabled={finalizarPerfume.isPending}
-                      onFinalizar={() => finalizar(p.id)}
-                      onReativar={() => reativar(p.id)}
-                    />
-                    <DeleteButton
-                      onConfirm={() => apagarPerfume(p.id)}
-                      disabled={deletePerfume.isPending}
-                      label={`Apagar ${p.nome}`}
-                    />
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+          <>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <select
+                value={campoBusca}
+                onChange={(e) => setCampoBusca(e.target.value)}
+                aria-label="Buscar perfume por qual dado"
+                className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
+              >
+                <option value="nome">Nome</option>
+                <option value="marca">Marca</option>
+              </select>
+              <input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder={`Buscar por ${campoBusca}`}
+                aria-label={`Buscar perfume por ${campoBusca}`}
+                className="h-11 w-full max-w-xs flex-1 rounded-lg border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
+              />
+            </div>
+
+            {perfumesFiltrados.length === 0 ? (
+              <div className="card p-8 text-center">
+                <p className="text-sm text-muted">
+                  Nenhum perfume encontrado para “{busca.trim()}”.
+                </p>
+              </div>
+            ) : (
+              <ul className="grid gap-3">
+                {perfumesFiltrados.map((p) => {
+                  const finalizado = !!p.finalizado_em
+                  const s = SITUACAO[p.situacao] ?? { label: p.situacao, cls: 'text-muted' }
+                  const label = finalizado ? 'Finalizado' : s.label
+                  const vendavel = p.pode_vender_decant || p.pode_vender_apc
+                  return (
+                    <li key={p.id} className="card flex items-center justify-between gap-4 p-5">
+                      <div>
+                        <p className="font-serif text-xl text-ink">{p.nome}</p>
+                        <p className="text-sm text-muted">
+                          {p.marca || 'Sem marca'} · {p.volume_total_ml}ml · APC {p.tamanho_apc_ml}ml
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm text-ink">{p.ml_livres_decants}ml livres</p>
+                          <p className={`text-xs uppercase tracking-wider ${s.cls}`}>{label}</p>
+                        </div>
+                        <FinalizarButton
+                          finalizado={finalizado}
+                          vendavel={vendavel}
+                          disabled={finalizarPerfume.isPending}
+                          onFinalizar={() => finalizar(p.id)}
+                          onReativar={() => reativar(p.id)}
+                        />
+                        <DeleteButton
+                          onConfirm={() => apagarPerfume(p.id)}
+                          disabled={deletePerfume.isPending}
+                          label={`Apagar ${p.nome}`}
+                        />
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </>
         )}
       </div>
     </div>
