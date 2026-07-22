@@ -18,6 +18,7 @@ export default function Clientes() {
   const [aberto, setAberto] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
   const [erroDelete, setErroDelete] = useState('')
+  const [busca, setBusca] = useState('')
   const { data: clientes, isPending, isError, refetch } = useClientes()
   const addCliente = useAddCliente()
   const updateCliente = useUpdateCliente()
@@ -35,6 +36,17 @@ export default function Clientes() {
 
   const salvando = addCliente.isPending || updateCliente.isPending
   const erroSalvar = addCliente.isError || updateCliente.isError
+
+  // Filtra por nome ou telefone. Pro telefone, compara só os dígitos, pra a
+  // pontuação (parênteses, traço, espaço) não atrapalhar a busca.
+  const termo = busca.trim().toLowerCase()
+  const digitosBusca = termo.replace(/\D/g, '')
+  const clientesFiltrados = (clientes ?? []).filter((c) => {
+    if (!termo) return true
+    const achouNome = c.nome.toLowerCase().includes(termo)
+    const achouFone = digitosBusca !== '' && c.whatsapp.replace(/\D/g, '').includes(digitosBusca)
+    return achouNome || achouFone
+  })
 
   function abrirNovo() {
     setEditandoId(null)
@@ -168,39 +180,58 @@ export default function Clientes() {
             </div>
           </div>
         ) : (
-          <ul className="grid gap-3">
-            {clientes.map((c) => (
-              <li key={c.id} className="card flex items-center justify-between gap-4 p-5">
-                <div>
-                  <p className="font-serif text-xl text-ink">{c.nome}</p>
-                  <p className="text-sm text-muted">
-                    {c.whatsapp}
-                    {c.endereco ? ` · ${c.endereco}` : ''}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Link
-                    to={`/clientes/${c.id}`}
-                    className="text-sm font-medium text-gold hover:underline"
-                  >
-                    Ver compras
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => abrirEdicao(c)}
-                    className="text-sm font-medium text-gold hover:underline"
-                  >
-                    Editar
-                  </button>
-                  <DeleteButton
-                    onConfirm={() => apagarCliente(c.id)}
-                    disabled={deleteCliente.isPending}
-                    label={`Apagar ${c.nome}`}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome ou telefone"
+              aria-label="Buscar cliente por nome ou telefone"
+              className="mb-4 h-11 w-full max-w-sm rounded-lg border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
+            />
+
+            {clientesFiltrados.length === 0 ? (
+              <div className="card p-8 text-center">
+                <p className="text-sm text-muted">
+                  Nenhum cliente encontrado para “{busca.trim()}”.
+                </p>
+              </div>
+            ) : (
+              <ul className="grid gap-3">
+                {clientesFiltrados.map((c) => (
+                  <li key={c.id} className="card flex items-center justify-between gap-4 p-5">
+                    <div>
+                      <p className="font-serif text-xl text-ink">{c.nome}</p>
+                      <p className="text-sm text-muted">
+                        {c.whatsapp}
+                        {c.endereco ? ` · ${c.endereco}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Link
+                        to={`/clientes/${c.id}`}
+                        className="text-sm font-medium text-gold hover:underline"
+                      >
+                        Ver compras
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => abrirEdicao(c)}
+                        className="text-sm font-medium text-gold hover:underline"
+                      >
+                        Editar
+                      </button>
+                      <DeleteButton
+                        onConfirm={() => apagarCliente(c.id)}
+                        disabled={deleteCliente.isPending}
+                        label={`Apagar ${c.nome}`}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </div>
     </div>
