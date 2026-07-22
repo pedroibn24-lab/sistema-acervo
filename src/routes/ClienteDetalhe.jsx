@@ -1,5 +1,12 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useCliente, useComprasCliente } from '../features/clientes/useClientes'
+
+const FILTROS_PAGAMENTO = [
+  { valor: 'todos', label: 'Todos' },
+  { valor: 'pago', label: 'Pagos' },
+  { valor: 'pendente', label: 'Pendentes' },
+]
 
 const brl = (n) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n || 0))
@@ -10,6 +17,7 @@ const formatarData = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-BR') :
 /** Tela de detalhe do cliente: dados + histórico de compras + totais. */
 export default function ClienteDetalhe() {
   const { id } = useParams()
+  const [filtroPagamento, setFiltroPagamento] = useState('todos')
   const cliente = useCliente(id)
   const compras = useComprasCliente(id)
 
@@ -19,6 +27,12 @@ export default function ClienteDetalhe() {
     .filter((it) => it.status_pagamento_perfume === 'pago')
     .reduce((soma, it) => soma + Number(it.preco_venda || 0), 0)
   const pendente = total - pago
+
+  // A lista abaixo filtra por pagamento; os totais acima seguem mostrando o geral.
+  const itensFiltrados =
+    filtroPagamento === 'todos'
+      ? itens
+      : itens.filter((it) => it.status_pagamento_perfume === filtroPagamento)
 
   const cards = [
     { label: 'Total comprado', valor: brl(total), cls: 'text-ink' },
@@ -51,7 +65,27 @@ export default function ClienteDetalhe() {
         ))}
       </div>
 
-      <h2 className="mt-10 font-serif text-2xl text-ink">Compras</h2>
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-serif text-2xl text-ink">Compras</h2>
+        {itens.length > 0 && (
+          <div className="flex gap-1 rounded-lg border border-border p-1">
+            {FILTROS_PAGAMENTO.map((f) => (
+              <button
+                key={f.valor}
+                type="button"
+                onClick={() => setFiltroPagamento(f.valor)}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  filtroPagamento === f.valor
+                    ? 'bg-surface-2 text-ink'
+                    : 'text-muted hover:text-ink'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="mt-4">
         {compras.isPending ? (
           <div className="grid gap-3">
@@ -74,9 +108,15 @@ export default function ClienteDetalhe() {
           <div className="card p-10 text-center">
             <p className="text-sm text-muted">Este cliente ainda não comprou nada.</p>
           </div>
+        ) : itensFiltrados.length === 0 ? (
+          <div className="card p-8 text-center">
+            <p className="text-sm text-muted">
+              Nenhuma compra {filtroPagamento === 'pago' ? 'paga' : 'pendente'}.
+            </p>
+          </div>
         ) : (
           <ul className="grid gap-2">
-            {itens.map((it) => (
+            {itensFiltrados.map((it) => (
               <li key={it.id} className="card flex items-center justify-between gap-3 p-4 text-sm">
                 <div>
                   <p className="text-ink">
