@@ -190,6 +190,11 @@ export default function Vendas() {
       ? itensLista
       : itensLista.filter((it) => it.status_pagamento_perfume === filtroPagamento)
 
+  // Status de pagamento da sacolinha — controla o selo e a trava do envio.
+  const pendentes = itensLista.filter((it) => it.status_pagamento_perfume === 'pendente')
+  const tudoPago = itensLista.length > 0 && pendentes.length === 0
+  const aReceber = pendentes.reduce((soma, it) => soma + Number(it.preco_venda || 0), 0)
+
   return (
     <div>
       <h1 className="font-serif text-4xl leading-tight text-ink">Vendas</h1>
@@ -247,7 +252,22 @@ export default function Vendas() {
                   </span>
                 </div>
 
-                {(itens.data?.length ?? 0) > 0 && (
+                {itensLista.length > 0 && (
+                  <div>
+                    {tudoPago ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
+                        ✓ Tudo pago — pronto para enviar
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted">
+                        {pendentes.length} {pendentes.length > 1 ? 'itens' : 'item'} a receber ·{' '}
+                        {brl(aReceber)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {itensLista.length > 0 && (
                   <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
                     {confirmandoEnvio ? (
                       <>
@@ -266,15 +286,23 @@ export default function Vendas() {
                         </button>
                       </>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setErroEnvio('')
-                          setConfirmandoEnvio(true)
-                        }}
-                      >
-                        Marcar como enviado
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          disabled={!tudoPago}
+                          onClick={() => {
+                            setErroEnvio('')
+                            setConfirmandoEnvio(true)
+                          }}
+                        >
+                          Marcar como enviado
+                        </Button>
+                        {!tudoPago && (
+                          <span className="text-xs text-muted">
+                            Só dá pra enviar quando todos os itens estiverem pagos.
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
