@@ -194,6 +194,7 @@ export default function Vendas() {
   const pendentes = itensLista.filter((it) => it.status_pagamento_perfume === 'pendente')
   const tudoPago = itensLista.length > 0 && pendentes.length === 0
   const aReceber = pendentes.reduce((soma, it) => soma + Number(it.preco_venda || 0), 0)
+  const clienteNome = (clientes.data ?? []).find((c) => c.id === clienteId)?.nome
 
   return (
     <div>
@@ -227,14 +228,23 @@ export default function Vendas() {
 
       {clienteId && (
         <>
-          <div className="card mt-6 p-6">
+          <div className={`mt-6 p-6 card ${s ? 'ring-1 ring-gold/40' : ''}`}>
             {sacolinha.isPending ? (
               <div className="skeleton h-6 w-48" />
             ) : s ? (
               <div className="grid gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg text-gold" aria-hidden="true">
+                    ✦
+                  </span>
+                  <h2 className="font-serif text-xl text-ink">
+                    Sacolinha{clienteNome ? ` de ${clienteNome}` : ''}
+                  </h2>
+                </div>
+
                 <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
                   <span className="text-muted">
-                    Sacolinha:{' '}
+                    Itens:{' '}
                     <span className="text-ink">
                       {s.qtd_decants} decants
                       {qtdApc > 0 ? ` + ${qtdApc} APC` : ''}
