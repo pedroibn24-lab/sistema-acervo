@@ -335,22 +335,23 @@ export default function Vendas() {
                 {erro}
               </p>
             )}
-          </form>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={onVenderApc}
-              disabled={!perfumeId || perfumeSel?.pode_vender_apc === false || venderApc.isPending}
-            >
-              {venderApc.isPending ? 'Vendendo APC…' : 'Vender APC do perfume'}
-            </Button>
-            <span className="text-xs text-muted">
-              {perfumeSel && perfumeSel.pode_vender_apc === false
-                ? 'O APC deste perfume já foi vendido.'
-                : 'Vende a apresentação completa (o APC) — a quantidade reservada do perfume selecionado.'}
-            </span>
-          </div>
+            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 sm:col-span-3">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onVenderApc}
+                disabled={!perfumeId || perfumeSel?.pode_vender_apc === false || venderApc.isPending}
+              >
+                {venderApc.isPending ? 'Vendendo APC…' : 'Vender APC do perfume'}
+              </Button>
+              <span className="text-xs text-muted">
+                {perfumeSel && perfumeSel.pode_vender_apc === false
+                  ? 'O APC deste perfume já foi vendido.'
+                  : 'Vende a apresentação completa (o APC) — a quantidade reservada do perfume selecionado.'}
+              </span>
+            </div>
+          </form>
 
           {s?.id && !itens.isPending && itensLista.length > 0 && (
             <div className="mt-6">
