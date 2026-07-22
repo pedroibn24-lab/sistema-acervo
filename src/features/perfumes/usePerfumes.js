@@ -45,6 +45,7 @@ export function useAddPerfume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PERFUMES_KEY })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa'] })
     },
   })
 }
@@ -81,6 +82,7 @@ export function useDeletePerfume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PERFUMES_KEY })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa'] })
     },
   })
 }

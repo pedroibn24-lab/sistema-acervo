@@ -8,7 +8,7 @@ export function useFinanceiro() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('vw_financeiro')
-        .select('faturamento_bruto, lucro_liquido, decants_vendidos, apcs_vendidos')
+        .select('faturamento_bruto, faturamento_recebido, a_receber')
         .single()
       if (error) throw error
       return data

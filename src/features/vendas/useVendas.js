@@ -90,6 +90,8 @@ export function useVenderDecant() {
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
+      queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa'] })
     },
   })
 }
@@ -120,6 +122,8 @@ export function useVenderApc() {
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
+      queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa'] })
     },
   })
 }
@@ -141,6 +145,8 @@ export function useApagarItem() {
       queryClient.invalidateQueries({ queryKey: ['perfumes'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
+      queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa'] })
     },
   })
 }
@@ -165,6 +171,7 @@ export function useEnviarSacolinha() {
       queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
     },
   })
 }
@@ -183,6 +190,8 @@ export function useMarcarPagoPerfume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa'] })
     },
   })
 }
