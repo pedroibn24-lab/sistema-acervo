@@ -1,6 +1,8 @@
+import { Link } from 'react-router'
 import { useFinanceiro } from '../features/financeiro/useFinanceiro'
 import { useResumoOperacao } from '../features/dashboard/useResumoOperacao'
 import { useCaixa } from '../features/dashboard/useCaixa'
+import { useDevedores } from '../features/dashboard/useDevedores'
 
 /** @param {number | string | null | undefined} n */
 const brl = (n) =>
@@ -26,6 +28,7 @@ export default function Dashboard() {
   const financeiro = useFinanceiro()
   const operacao = useResumoOperacao()
   const caixa = useCaixa()
+  const devedores = useDevedores()
 
   const finPronto = !financeiro.isPending
   const opPronto = !operacao.isPending
@@ -92,6 +95,63 @@ export default function Dashboard() {
           destaque={valorCaixa >= 0}
           danger={valorCaixa < 0}
         />
+      </div>
+
+      <h2 className="mt-8 text-xs font-medium uppercase tracking-wider text-muted">
+        Quem está devendo
+      </h2>
+      <div className="mt-3">
+        {devedores.isPending ? (
+          <div className="grid gap-2">
+            {[0, 1].map((i) => (
+              <div key={i} className="skeleton h-16" />
+            ))}
+          </div>
+        ) : devedores.isError ? (
+          <div className="card p-6 text-center">
+            <p className="text-sm text-muted">Não foi possível carregar os devedores.</p>
+            <button
+              type="button"
+              onClick={() => devedores.refetch()}
+              className="mt-3 text-sm font-medium text-gold hover:underline"
+            >
+              Tentar de novo
+            </button>
+          </div>
+        ) : (devedores.data?.length ?? 0) === 0 ? (
+          <div className="card p-8 text-center">
+            <span className="text-2xl text-gold" aria-hidden="true">
+              ✦
+            </span>
+            <p className="mt-2 text-sm text-muted">Ninguém devendo — todo mundo em dia.</p>
+          </div>
+        ) : (
+          <ul className="grid gap-2">
+            {devedores.data.map((d) => (
+              <li
+                key={d.cliente_id}
+                className="card flex items-center justify-between gap-3 p-4"
+              >
+                <div>
+                  <p className="font-serif text-lg text-ink">{d.nome}</p>
+                  <p className="text-xs text-muted">
+                    {d.whatsapp} · {d.itens_pendentes}{' '}
+                    {d.itens_pendentes > 1 ? 'itens pendentes' : 'item pendente'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="font-serif text-lg text-ink">{brl(d.total_devido)}</span>
+                  <Link
+                    to={`/clientes/${d.cliente_id}`}
+                    className="text-sm font-medium text-gold hover:underline"
+                  >
+                    Ver
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   )

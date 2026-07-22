@@ -92,6 +92,7 @@ export function useVenderDecant() {
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
       queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
       queryClient.invalidateQueries({ queryKey: ['caixa'] })
+      queryClient.invalidateQueries({ queryKey: ['devedores'] })
     },
   })
 }
@@ -124,6 +125,7 @@ export function useVenderApc() {
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
       queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
       queryClient.invalidateQueries({ queryKey: ['caixa'] })
+      queryClient.invalidateQueries({ queryKey: ['devedores'] })
     },
   })
 }
@@ -147,6 +149,7 @@ export function useApagarItem() {
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
       queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
       queryClient.invalidateQueries({ queryKey: ['caixa'] })
+      queryClient.invalidateQueries({ queryKey: ['devedores'] })
     },
   })
 }
@@ -192,6 +195,7 @@ export function useMarcarPagoPerfume() {
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
       queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
       queryClient.invalidateQueries({ queryKey: ['caixa'] })
+      queryClient.invalidateQueries({ queryKey: ['devedores'] })
     },
   })
 }
