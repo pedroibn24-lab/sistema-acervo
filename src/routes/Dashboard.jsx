@@ -32,6 +32,7 @@ export default function Dashboard() {
   const caixaPronto = !caixa.isPending
   const f = financeiro.data
   const decantsAPagar = operacao.data?.decantsAPagar ?? 0
+  const apcsAPagar = operacao.data?.apcsAPagar ?? 0
   const valorCaixa = Number(caixa.data?.caixa || 0)
 
   const temErro = financeiro.isError || operacao.isError || caixa.isError
@@ -70,6 +71,12 @@ export default function Dashboard() {
           value={decantsAPagar}
           pronto={opPronto}
           destaque={decantsAPagar > 0}
+        />
+        <Metric
+          label="APCs a pagar"
+          value={apcsAPagar}
+          pronto={opPronto}
+          destaque={apcsAPagar > 0}
         />
       </div>
 
