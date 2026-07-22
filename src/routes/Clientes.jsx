@@ -19,6 +19,7 @@ export default function Clientes() {
   const [editandoId, setEditandoId] = useState(null)
   const [erroDelete, setErroDelete] = useState('')
   const [busca, setBusca] = useState('')
+  const [campoBusca, setCampoBusca] = useState('nome') // 'nome' ou 'telefone'
   const { data: clientes, isPending, isError, refetch } = useClientes()
   const addCliente = useAddCliente()
   const updateCliente = useUpdateCliente()
@@ -37,15 +38,16 @@ export default function Clientes() {
   const salvando = addCliente.isPending || updateCliente.isPending
   const erroSalvar = addCliente.isError || updateCliente.isError
 
-  // Filtra por nome ou telefone. Pro telefone, compara só os dígitos, pra a
+  // Filtra pelo campo escolhido. No telefone, compara só os dígitos, pra a
   // pontuação (parênteses, traço, espaço) não atrapalhar a busca.
   const termo = busca.trim().toLowerCase()
-  const digitosBusca = termo.replace(/\D/g, '')
   const clientesFiltrados = (clientes ?? []).filter((c) => {
     if (!termo) return true
-    const achouNome = c.nome.toLowerCase().includes(termo)
-    const achouFone = digitosBusca !== '' && c.whatsapp.replace(/\D/g, '').includes(digitosBusca)
-    return achouNome || achouFone
+    if (campoBusca === 'telefone') {
+      const digitos = termo.replace(/\D/g, '')
+      return digitos !== '' && c.whatsapp.replace(/\D/g, '').includes(digitos)
+    }
+    return c.nome.toLowerCase().includes(termo)
   })
 
   function abrirNovo() {
@@ -181,14 +183,25 @@ export default function Clientes() {
           </div>
         ) : (
           <>
-            <input
-              type="search"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome ou telefone"
-              aria-label="Buscar cliente por nome ou telefone"
-              className="mb-4 h-11 w-full max-w-sm rounded-lg border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
-            />
+            <div className="mb-4 flex flex-wrap gap-2">
+              <select
+                value={campoBusca}
+                onChange={(e) => setCampoBusca(e.target.value)}
+                aria-label="Buscar cliente por qual dado"
+                className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
+              >
+                <option value="nome">Nome</option>
+                <option value="telefone">Telefone</option>
+              </select>
+              <input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder={`Buscar por ${campoBusca}`}
+                aria-label={`Buscar cliente por ${campoBusca}`}
+                className="h-11 w-full max-w-xs flex-1 rounded-lg border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
+              />
+            </div>
 
             {clientesFiltrados.length === 0 ? (
               <div className="card p-8 text-center">
