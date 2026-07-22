@@ -55,8 +55,10 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-bg text-ink">
-      {/* Menu lateral — só no desktop */}
+    // h-dvh + overflow-hidden: a página em si não rola; só a área principal rola,
+    // então o menu lateral fica fixo no lugar.
+    <div className="flex h-dvh overflow-hidden bg-bg text-ink">
+      {/* Menu lateral — fixo, só no desktop */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border p-5 md:flex">
         <Brand size="sm" />
         <nav className="mt-8 flex flex-col gap-1">
@@ -73,9 +75,9 @@ export default function AppLayout() {
       </aside>
 
       {/* Área principal */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Cabeçalho — só no mobile */}
-        <header className="border-b border-border md:hidden">
+        <header className="shrink-0 border-b border-border md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <Brand size="sm" />
             <div className="flex items-center gap-2">
@@ -92,7 +94,7 @@ export default function AppLayout() {
           </nav>
         </header>
 
-        <main className="flex-1 px-6 py-8 md:px-10 md:py-10">
+        <main className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-10">
           <div className="mx-auto max-w-7xl">
             <Suspense fallback={<CarregandoTela />}>
               <Outlet />
