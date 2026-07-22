@@ -11,7 +11,7 @@ export function usePerfumes() {
       const { data, error } = await supabase
         .from('vw_perfumes_saldo')
         .select(
-          'id, nome, marca, volume_total_ml, tamanho_apc_ml, ml_vendidos_decants, ml_livres_decants, apc_ml_atual, situacao, pode_vender_decant, pode_vender_apc, finalizado_em',
+          'id, nome, marca, volume_total_ml, tamanho_apc_ml, ml_vendidos_decants, ml_livres_decants, apc_ml_atual, situacao, apc_vendido, pode_vender_decant, pode_vender_apc, finalizado_em',
         )
         .order('created_at', { ascending: false })
         .range(0, 49)

@@ -108,6 +108,8 @@ export default function Perfumes() {
   const [erroDelete, setErroDelete] = useState('')
   const [busca, setBusca] = useState('')
   const [campoBusca, setCampoBusca] = useState('nome') // 'nome' ou 'marca'
+  const [filtro, setFiltro] = useState('todos')
+  const [ordenacao, setOrdenacao] = useState('recentes')
   const { data: perfumes, isPending, isError, refetch } = usePerfumes()
   const addPerfume = useAddPerfume()
   const finalizarPerfume = useFinalizarPerfume()
@@ -136,12 +138,30 @@ export default function Perfumes() {
     setAberto(false)
   }
 
-  // Filtra pelo campo escolhido (nome ou marca), sem diferenciar maiúsculas.
+  // 1) Filtra por texto (nome ou marca) E pelo filtro de situação/APC.
   const termoBusca = busca.trim().toLowerCase()
   const perfumesFiltrados = (perfumes ?? []).filter((p) => {
-    if (!termoBusca) return true
-    return String(p[campoBusca] ?? '').toLowerCase().includes(termoBusca)
+    // busca por texto
+    if (termoBusca && !String(p[campoBusca] ?? '').toLowerCase().includes(termoBusca)) {
+      return false
+    }
+    // filtro de situação / APC
+    if (filtro === 'nao_esgotado') return p.situacao !== 'esgotado'
+    if (filtro === 'esgotado') return p.situacao === 'esgotado'
+    if (filtro === 'apc_vendido') return p.apc_vendido === true
+    if (filtro === 'apc_disponivel') return p.apc_vendido === false
+    return true // 'todos'
   })
+
+  // 2) Ordena o resultado. 'recentes' mantém a ordem que veio do banco.
+  const perfumesOrdenados = [...perfumesFiltrados]
+  if (ordenacao === 'nome') {
+    perfumesOrdenados.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+  } else if (ordenacao === 'mais_livre') {
+    perfumesOrdenados.sort((a, b) => b.ml_livres_decants - a.ml_livres_decants)
+  } else if (ordenacao === 'menos_livre') {
+    perfumesOrdenados.sort((a, b) => a.ml_livres_decants - b.ml_livres_decants)
+  }
 
   async function apagarPerfume(id) {
     setErroDelete('')
@@ -290,35 +310,66 @@ export default function Perfumes() {
           </div>
         ) : (
           <>
-            <div className="mb-4 flex flex-wrap gap-2">
-              <select
-                value={campoBusca}
-                onChange={(e) => setCampoBusca(e.target.value)}
-                aria-label="Buscar perfume por qual dado"
-                className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
-              >
-                <option value="nome">Nome</option>
-                <option value="marca">Marca</option>
-              </select>
-              <input
-                type="search"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder={`Buscar por ${campoBusca}`}
-                aria-label={`Buscar perfume por ${campoBusca}`}
-                className="h-11 w-full max-w-xs flex-1 rounded-lg border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
-              />
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="flex gap-2">
+                <select
+                  value={campoBusca}
+                  onChange={(e) => setCampoBusca(e.target.value)}
+                  aria-label="Buscar perfume por qual dado"
+                  className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
+                >
+                  <option value="nome">Nome</option>
+                  <option value="marca">Marca</option>
+                </select>
+                <input
+                  type="search"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder={`Buscar por ${campoBusca}`}
+                  aria-label={`Buscar perfume por ${campoBusca}`}
+                  className="h-11 w-44 flex-1 rounded-lg border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-muted">Filtrar</span>
+                <select
+                  value={filtro}
+                  onChange={(e) => setFiltro(e.target.value)}
+                  aria-label="Filtrar perfumes"
+                  className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="nao_esgotado">Não esgotados</option>
+                  <option value="esgotado">Esgotados</option>
+                  <option value="apc_vendido">APC vendido</option>
+                  <option value="apc_disponivel">APC disponível</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-muted">Ordenar</span>
+                <select
+                  value={ordenacao}
+                  onChange={(e) => setOrdenacao(e.target.value)}
+                  aria-label="Ordenar perfumes"
+                  className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
+                >
+                  <option value="recentes">Mais recentes</option>
+                  <option value="nome">Nome (A–Z)</option>
+                  <option value="mais_livre">Mais ml livres</option>
+                  <option value="menos_livre">Menos ml livres</option>
+                </select>
+              </div>
             </div>
 
-            {perfumesFiltrados.length === 0 ? (
+            {perfumesOrdenados.length === 0 ? (
               <div className="card p-8 text-center">
-                <p className="text-sm text-muted">
-                  Nenhum perfume encontrado para “{busca.trim()}”.
-                </p>
+                <p className="text-sm text-muted">Nenhum perfume com esses filtros.</p>
               </div>
             ) : (
               <ul className="grid gap-3">
-                {perfumesFiltrados.map((p) => {
+                {perfumesOrdenados.map((p) => {
                   const finalizado = !!p.finalizado_em
                   const s = SITUACAO[p.situacao] ?? { label: p.situacao, cls: 'text-muted' }
                   const label = finalizado ? 'Finalizado' : s.label
@@ -330,6 +381,15 @@ export default function Perfumes() {
                         <p className="text-sm text-muted">
                           {p.marca || 'Sem marca'} · {p.volume_total_ml}ml · APC {p.tamanho_apc_ml}ml
                         </p>
+                        <span
+                          className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            p.apc_vendido
+                              ? 'bg-gold/15 text-gold'
+                              : 'border border-border text-muted'
+                          }`}
+                        >
+                          {p.apc_vendido ? '✓ APC vendido' : 'APC disponível'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
