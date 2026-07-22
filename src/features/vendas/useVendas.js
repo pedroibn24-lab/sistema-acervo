@@ -145,6 +145,30 @@ export function useApagarItem() {
   })
 }
 
+/**
+ * Marca a sacolinha como ENVIADA. O gatilho do banco debita as caixas sugeridas
+ * do estoque e carimba a data de envio — se faltar caixa, o banco bloqueia e o
+ * erro (com mensagem pronta) sobe pra tela.
+ */
+export function useEnviarSacolinha() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (sacolinhaId) => {
+      const { error } = await supabase
+        .from('sacolinhas')
+        .update({ status_envio: 'enviado' })
+        .eq('id', sacolinhaId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['itens-sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['estoque'] })
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+    },
+  })
+}
+
 /** Marca o pagamento do perfume de um item como pago ou pendente. */
 export function useMarcarPagoPerfume() {
   const queryClient = useQueryClient()

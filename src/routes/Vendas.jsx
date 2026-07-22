@@ -9,6 +9,7 @@ import {
   useVenderApc,
   useApagarItem,
   useMarcarPagoPerfume,
+  useEnviarSacolinha,
 } from '../features/vendas/useVendas'
 import Button from '../components/ui/Button'
 
@@ -124,6 +125,8 @@ export default function Vendas() {
   const [perfumeId, setPerfumeId] = useState('')
   const [ml, setMl] = useState('')
   const [erro, setErro] = useState('')
+  const [confirmandoEnvio, setConfirmandoEnvio] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState('')
 
   const sacolinha = useSacolinhaAberta(clienteId)
   const itens = useItensSacolinha(sacolinha.data?.id)
@@ -131,6 +134,7 @@ export default function Vendas() {
   const venderApc = useVenderApc()
   const apagar = useApagarItem()
   const marcarPago = useMarcarPagoPerfume()
+  const enviar = useEnviarSacolinha()
   const perfumeSel = (perfumes.data ?? []).find((p) => p.id === perfumeId)
 
   async function onVender(e) {
@@ -152,6 +156,18 @@ export default function Vendas() {
       setMl('')
     } catch (err) {
       setErro(err?.message || 'Não foi possível vender o APC.')
+    }
+  }
+
+  async function onEnviar(sacolinhaId) {
+    setErroEnvio('')
+    try {
+      await enviar.mutateAsync(sacolinhaId)
+      setConfirmandoEnvio(false)
+      // A sacolinha some da lista de "abertas" — o cliente pode abrir uma nova.
+    } catch (err) {
+      // Mensagem do banco (ex.: falta de caixa) já vem pronta pro usuário.
+      setErroEnvio(err?.message || 'Não foi possível enviar a sacolinha.')
     }
   }
 
@@ -178,6 +194,8 @@ export default function Vendas() {
           onChange={(e) => {
             setClienteId(e.target.value)
             setErro('')
+            setErroEnvio('')
+            setConfirmandoEnvio(false)
           }}
           className={`mt-1.5 w-full ${selectCls}`}
         >
@@ -196,24 +214,64 @@ export default function Vendas() {
             {sacolinha.isPending ? (
               <div className="skeleton h-6 w-48" />
             ) : s ? (
-              <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                <span className="text-muted">
-                  Sacolinha:{' '}
-                  <span className="text-ink">
-                    {s.qtd_decants} decants
-                    {qtdApc > 0 ? ` + ${qtdApc} APC` : ''}
+              <div className="grid gap-4">
+                <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                  <span className="text-muted">
+                    Sacolinha:{' '}
+                    <span className="text-ink">
+                      {s.qtd_decants} decants
+                      {qtdApc > 0 ? ` + ${qtdApc} APC` : ''}
+                    </span>
                   </span>
-                </span>
-                <span className="text-muted">
-                  Total: <span className="text-ink">{brl(s.valor_itens)}</span>
-                </span>
-                <span className="text-muted">
-                  Caixas sugeridas:{' '}
-                  <span className="text-ink">
-                    {s.caixas_coletivas_sugeridas} coletiva(s) + {s.caixas_individuais_sugeridas}{' '}
-                    individual(is)
+                  <span className="text-muted">
+                    Total: <span className="text-ink">{brl(s.valor_itens)}</span>
                   </span>
-                </span>
+                  <span className="text-muted">
+                    Caixas sugeridas:{' '}
+                    <span className="text-ink">
+                      {s.caixas_coletivas_sugeridas} coletiva(s) + {s.caixas_individuais_sugeridas}{' '}
+                      individual(is)
+                    </span>
+                  </span>
+                </div>
+
+                {(itens.data?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+                    {confirmandoEnvio ? (
+                      <>
+                        <span className="text-sm text-muted">
+                          Enviar e fechar esta sacolinha? As caixas serão descontadas do estoque.
+                        </span>
+                        <Button onClick={() => onEnviar(s.id)} disabled={enviar.isPending}>
+                          {enviar.isPending ? 'Enviando…' : 'Sim, enviar'}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmandoEnvio(false)}
+                          className="text-sm text-muted hover:text-ink"
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setErroEnvio('')
+                          setConfirmandoEnvio(true)
+                        }}
+                      >
+                        Marcar como enviado
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {erroEnvio && (
+                  <p className="text-sm text-danger" role="alert">
+                    {erroEnvio}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted">

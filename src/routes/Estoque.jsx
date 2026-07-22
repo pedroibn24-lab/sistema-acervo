@@ -7,6 +7,12 @@ const FRASCOS = [
   { tipo: 'frasco_20ml', label: 'Frasco 20ml' },
 ]
 
+const CAIXAS = [
+  { tipo: 'caixa_coletiva', label: 'Caixa coletiva' },
+  { tipo: 'caixa_individual', label: 'Caixa individual' },
+  { tipo: 'caixa_correio', label: 'Caixa de correio' },
+]
+
 /** Uma linha do estoque: mostra o atual e adiciona a quantidade comprada. */
 function LinhaEstoque({ tipo, label, atual, onAdicionar, salvando }) {
   const [valor, setValor] = useState('')
@@ -59,16 +65,16 @@ export default function Estoque() {
 
   return (
     <div>
-      <h1 className="font-serif text-4xl leading-tight text-ink">Estoque de frascos</h1>
+      <h1 className="font-serif text-4xl leading-tight text-ink">Estoque</h1>
       <p className="mt-2 text-muted">
-        Quantos frascos vazios você tem. Digite quantos você comprou e clique em Adicionar — o valor
-        soma ao estoque. Cada venda de decant desconta um frasco automaticamente.
+        Frascos e caixas que você tem. Digite quantos comprou e clique em Adicionar — o valor soma ao
+        estoque. Vender um decant desconta um frasco; enviar uma sacolinha desconta as caixas.
       </p>
 
       <div className="mt-8">
         {isPending ? (
           <div className="grid gap-3">
-            {[0, 1].map((i) => (
+            {[0, 1, 2].map((i) => (
               <div key={i} className="skeleton h-20" />
             ))}
           </div>
@@ -84,17 +90,38 @@ export default function Estoque() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-3">
-            {FRASCOS.map((f) => (
-              <LinhaEstoque
-                key={f.tipo}
-                tipo={f.tipo}
-                label={f.label}
-                atual={estoque[f.tipo] ?? 0}
-                onAdicionar={adicionar}
-                salvando={addEstoque.isPending}
-              />
-            ))}
+          <div className="grid gap-8">
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted">Frascos</h2>
+              <div className="grid gap-3">
+                {FRASCOS.map((f) => (
+                  <LinhaEstoque
+                    key={f.tipo}
+                    tipo={f.tipo}
+                    label={f.label}
+                    atual={estoque[f.tipo] ?? 0}
+                    onAdicionar={adicionar}
+                    salvando={addEstoque.isPending}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted">Caixas</h2>
+              <div className="grid gap-3">
+                {CAIXAS.map((c) => (
+                  <LinhaEstoque
+                    key={c.tipo}
+                    tipo={c.tipo}
+                    label={c.label}
+                    atual={estoque[c.tipo] ?? 0}
+                    onAdicionar={adicionar}
+                    salvando={addEstoque.isPending}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
         )}
 
