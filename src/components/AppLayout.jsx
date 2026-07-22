@@ -30,7 +30,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-dvh bg-bg text-ink">
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-8">
             <Brand size="sm" />
             <nav className="flex items-center gap-5">
@@ -63,7 +63,7 @@ export default function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-6 py-10">
         <Suspense fallback={<CarregandoTela />}>
           <Outlet />
         </Suspense>
