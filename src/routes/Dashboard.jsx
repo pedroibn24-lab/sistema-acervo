@@ -3,6 +3,7 @@ import { useFinanceiro } from '../features/financeiro/useFinanceiro'
 import { useResumoOperacao } from '../features/dashboard/useResumoOperacao'
 import { useCaixa } from '../features/dashboard/useCaixa'
 import { useDevedores } from '../features/dashboard/useDevedores'
+import { useFrete } from '../features/dashboard/useFrete'
 
 /** @param {number | string | null | undefined} n */
 const brl = (n) =>
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const operacao = useResumoOperacao()
   const caixa = useCaixa()
   const devedores = useDevedores()
+  const frete = useFrete()
 
   const finPronto = !financeiro.isPending
   const opPronto = !operacao.isPending
@@ -38,7 +40,7 @@ export default function Dashboard() {
   const apcsAPagar = operacao.data?.apcsAPagar ?? 0
   const valorCaixa = Number(caixa.data?.caixa || 0)
 
-  const temErro = financeiro.isError || operacao.isError || caixa.isError
+  const temErro = financeiro.isError || operacao.isError || caixa.isError || frete.isError
 
   return (
     <div>
@@ -54,6 +56,7 @@ export default function Dashboard() {
               financeiro.refetch()
               operacao.refetch()
               caixa.refetch()
+              frete.refetch()
             }}
             className="mt-3 text-sm font-medium text-gold hover:underline"
           >
@@ -86,6 +89,11 @@ export default function Dashboard() {
       <h2 className="mt-8 text-xs font-medium uppercase tracking-wider text-muted">Dinheiro</h2>
       <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="A receber" value={brl(f?.a_receber)} pronto={finPronto} />
+        <Metric
+          label="A receber (frete)"
+          value={brl(frete.data?.a_receber_frete)}
+          pronto={!frete.isPending}
+        />
         <Metric label="Recebido" value={brl(f?.faturamento_recebido)} pronto={finPronto} destaque />
         <Metric label="Faturamento" value={brl(f?.faturamento_bruto)} pronto={finPronto} />
         <Metric

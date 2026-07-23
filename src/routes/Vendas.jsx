@@ -10,6 +10,8 @@ import {
   useApagarItem,
   useMarcarPagoPerfume,
   useEnviarSacolinha,
+  useSalvarFrete,
+  useMarcarFretePago,
 } from '../features/vendas/useVendas'
 import Button from '../components/ui/Button'
 
@@ -96,6 +98,63 @@ function ItemRow({ item, onApagar, onTogglePago, ocupado }) {
   )
 }
 
+/** Formata dígitos em reais pela regra dos centavos: "1500" -> "15,00". */
+function mascaraReais(valor) {
+  const digitos = String(valor).replace(/\D/g, '')
+  if (!digitos) return ''
+  return (Number(digitos) / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+/** Lê o texto mascarado de volta para número (reais). */
+function parseReais(str) {
+  const digitos = String(str).replace(/\D/g, '')
+  return digitos ? Number(digitos) / 100 : 0
+}
+
+/**
+ * Linha do frete: informa o valor e marca como pago. Fica no card da sacolinha.
+ * É montada com key={sacolinha.id}, então o input começa com o valor salvo.
+ */
+function FreteRow({ valorFrete, fretePago, onSalvar, onTogglePago, ocupado }) {
+  const [valor, setValor] = useState(
+    valorFrete ? mascaraReais(String(Math.round(valorFrete * 100))) : '',
+  )
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+      <label htmlFor="frete" className="text-sm text-muted">
+        Frete R$
+      </label>
+      <input
+        id="frete"
+        inputMode="numeric"
+        placeholder="0,00"
+        value={valor}
+        onChange={(e) => setValor(mascaraReais(e.target.value))}
+        className="h-11 w-28 rounded-lg border border-border bg-surface px-3 text-sm text-ink placeholder:text-muted/60 focus:border-gold"
+      />
+      <Button variant="ghost" onClick={() => onSalvar(parseReais(valor))} disabled={ocupado}>
+        Salvar frete
+      </Button>
+      {valorFrete > 0 && (
+        <button
+          type="button"
+          onClick={() => onTogglePago(!fretePago)}
+          disabled={ocupado}
+          className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+            fretePago ? 'bg-gold/15 text-gold' : 'border border-border text-muted hover:text-ink'
+          }`}
+        >
+          {fretePago ? '✓ Frete pago' : 'Frete pendente'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 /**
  * Traduz o erro do banco numa frase que a pessoa entende.
  * O caso mais comum e mais críptico é o estoque de frascos negativo:
@@ -141,6 +200,8 @@ export default function Vendas() {
   const apagar = useApagarItem()
   const marcarPago = useMarcarPagoPerfume()
   const enviar = useEnviarSacolinha()
+  const salvarFrete = useSalvarFrete()
+  const marcarFretePago = useMarcarFretePago()
   const perfumeSel = (perfumes.data ?? []).find((p) => p.id === perfumeId)
 
   async function onVender(e) {
@@ -177,6 +238,16 @@ export default function Vendas() {
     }
   }
 
+  function onSalvarFrete(valor) {
+    setErroEnvio('')
+    salvarFrete.mutate({ sacolinhaId: s.id, valorFrete: valor })
+  }
+
+  function onToggleFretePago(pago) {
+    setErroEnvio('')
+    marcarFretePago.mutate({ sacolinhaId: s.id, pago })
+  }
+
   if (!clientes.isPending && (clientes.data?.length ?? 0) === 0)
     return <PrecisaCadastro tipo="cliente" para="clientes" />
   if (!perfumes.isPending && (perfumes.data?.length ?? 0) === 0)
@@ -195,6 +266,11 @@ export default function Vendas() {
   const tudoPago = itensLista.length > 0 && pendentes.length === 0
   const aReceber = pendentes.reduce((soma, it) => soma + Number(it.preco_venda || 0), 0)
   const clienteNome = (clientes.data ?? []).find((c) => c.id === clienteId)?.nome
+
+  // Frete: se há valor, precisa estar pago pra liberar o envio.
+  const valorFrete = Number(s?.valor_frete || 0)
+  const freteOk = valorFrete === 0 || !!s?.frete_pago
+  const podeEnviar = tudoPago && freteOk
 
   return (
     <div>
@@ -278,6 +354,17 @@ export default function Vendas() {
                 )}
 
                 {itensLista.length > 0 && (
+                  <FreteRow
+                    key={s.id}
+                    valorFrete={valorFrete}
+                    fretePago={!!s.frete_pago}
+                    onSalvar={onSalvarFrete}
+                    onTogglePago={onToggleFretePago}
+                    ocupado={salvarFrete.isPending || marcarFretePago.isPending}
+                  />
+                )}
+
+                {itensLista.length > 0 && (
                   <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
                     {confirmandoEnvio ? (
                       <>
@@ -299,7 +386,7 @@ export default function Vendas() {
                       <>
                         <Button
                           variant="ghost"
-                          disabled={!tudoPago}
+                          disabled={!podeEnviar}
                           onClick={() => {
                             setErroEnvio('')
                             setConfirmandoEnvio(true)
@@ -307,11 +394,15 @@ export default function Vendas() {
                         >
                           Marcar como enviado
                         </Button>
-                        {!tudoPago && (
+                        {!tudoPago ? (
                           <span className="text-xs text-muted">
                             Só dá pra enviar quando todos os itens estiverem pagos.
                           </span>
-                        )}
+                        ) : !freteOk ? (
+                          <span className="text-xs text-muted">
+                            Informe o frete e marque como pago antes de enviar.
+                          </span>
+                        ) : null}
                       </>
                     )}
                   </div>

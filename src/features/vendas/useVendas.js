@@ -34,7 +34,7 @@ export function useSacolinhaAberta(clienteId) {
       const { data, error } = await supabase
         .from('vw_sacolinhas_resumo')
         .select(
-          'id, qtd_decants, frascos_5ml, frascos_20ml, caixas_coletivas_sugeridas, caixas_individuais_sugeridas, valor_itens, status_envio',
+          'id, qtd_decants, frascos_5ml, frascos_20ml, caixas_coletivas_sugeridas, caixas_individuais_sugeridas, valor_itens, status_envio, valor_frete, frete_pago',
         )
         .eq('cliente_id', clienteId)
         .neq('status_envio', 'enviado')
@@ -175,6 +175,42 @@ export function useEnviarSacolinha() {
       queryClient.invalidateQueries({ queryKey: ['estoque'] })
       queryClient.invalidateQueries({ queryKey: ['financeiro'] })
       queryClient.invalidateQueries({ queryKey: ['resumo-operacao'] })
+    },
+  })
+}
+
+/** Salva o valor do frete da sacolinha. */
+export function useSalvarFrete() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ sacolinhaId, valorFrete }) => {
+      const { error } = await supabase
+        .from('sacolinhas')
+        .update({ valor_frete: valorFrete })
+        .eq('id', sacolinhaId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['frete'] })
+    },
+  })
+}
+
+/** Marca o frete da sacolinha como pago ou pendente. */
+export function useMarcarFretePago() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ sacolinhaId, pago }) => {
+      const { error } = await supabase
+        .from('sacolinhas')
+        .update({ frete_pago: pago })
+        .eq('id', sacolinhaId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sacolinha'] })
+      queryClient.invalidateQueries({ queryKey: ['frete'] })
     },
   })
 }
