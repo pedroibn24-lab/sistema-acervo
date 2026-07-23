@@ -19,6 +19,7 @@ export function useEstoque() {
 
 /**
  * Adiciona `delta` frascos ao estoque de um tipo (soma em cima do que já existe).
+ * `delta` negativo REMOVE do estoque — nunca fica abaixo de 0 (Math.max(0, ...)).
  * Lê o valor atual, soma e grava o novo total. Cria a linha se ainda não houver.
  */
 export function useAddEstoque() {

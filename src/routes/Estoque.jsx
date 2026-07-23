@@ -13,15 +13,17 @@ const CAIXAS = [
   { tipo: 'caixa_correio', label: 'Caixa de correio' },
 ]
 
-/** Uma linha do estoque: mostra o atual e adiciona a quantidade comprada. */
+/** Uma linha do estoque: mostra o atual e permite somar ou remover quantidade. */
 function LinhaEstoque({ tipo, label, atual, onAdicionar, salvando }) {
   const [valor, setValor] = useState('')
+  const qtd = Math.floor(Number(valor) || 0)
+  const invalido = qtd < 1 || salvando
 
-  async function adicionar() {
-    const qtd = Math.floor(Number(valor) || 0)
+  /** @param {number} sinal  +1 adiciona, -1 remove */
+  async function mexer(sinal) {
     if (qtd < 1) return
     try {
-      await onAdicionar(tipo, qtd)
+      await onAdicionar(tipo, sinal * qtd)
       setValor('') // limpa o campo só se deu certo
     } catch {
       // o erro é mostrado pela tela; mantém o valor digitado pra tentar de novo
@@ -29,25 +31,28 @@ function LinhaEstoque({ tipo, label, atual, onAdicionar, salvando }) {
   }
 
   return (
-    <div className="card flex items-center justify-between gap-4 p-5">
+    <div className="card flex flex-wrap items-center justify-between gap-4 p-5">
       <div>
         <p className="font-serif text-xl text-ink">{label}</p>
         <p className="text-sm text-muted">Em estoque: {atual ?? 0}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           type="number"
           min="1"
           step="1"
-          placeholder="Comprei…"
+          placeholder="Quantidade"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+          onKeyDown={(e) => e.key === 'Enter' && mexer(1)}
           className="h-11 w-28 rounded-lg border border-border bg-surface px-3 text-sm text-ink focus:border-gold"
-          aria-label={`Quantos frascos de ${label} adicionar`}
+          aria-label={`Quantidade de ${label}`}
         />
-        <Button onClick={adicionar} disabled={salvando || Math.floor(Number(valor) || 0) < 1}>
+        <Button onClick={() => mexer(1)} disabled={invalido}>
           Adicionar
+        </Button>
+        <Button variant="ghost" onClick={() => mexer(-1)} disabled={invalido}>
+          Remover
         </Button>
       </div>
     </div>
@@ -67,8 +72,9 @@ export default function Estoque() {
     <div>
       <h1 className="font-serif text-4xl leading-tight text-ink">Estoque</h1>
       <p className="mt-2 text-muted">
-        Frascos e caixas que você tem. Digite quantos comprou e clique em Adicionar — o valor soma ao
-        estoque. Vender um decant desconta um frasco; enviar uma sacolinha desconta as caixas.
+        Frascos e caixas que você tem. Digite uma quantidade e escolha <strong>Adicionar</strong>{' '}
+        (soma) ou <strong>Remover</strong> (subtrai). Vender um decant desconta um frasco; enviar uma
+        sacolinha desconta as caixas.
       </p>
 
       <div className="mt-8">
