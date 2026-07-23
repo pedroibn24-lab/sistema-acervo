@@ -3,6 +3,25 @@ import { supabase } from '../../lib/supabase'
 
 const CLIENTES_KEY = ['clientes']
 
+// Colunas do endereço + dados base. Usado nas leituras e para montar o payload.
+const CAMPOS_CLIENTE = 'nome, whatsapp, cep, rua, numero, complemento, bairro, cidade, estado'
+
+/** Monta o objeto pra gravar: campos vazios viram null. */
+function dadosCliente(values) {
+  const limpar = (v) => (v && String(v).trim() ? String(v).trim() : null)
+  return {
+    nome: values.nome,
+    whatsapp: values.whatsapp,
+    cep: limpar(values.cep),
+    rua: limpar(values.rua),
+    numero: limpar(values.numero),
+    complemento: limpar(values.complemento),
+    bairro: limpar(values.bairro),
+    cidade: limpar(values.cidade),
+    estado: limpar(values.estado),
+  }
+}
+
 /** Lista os clientes do usuário logado. */
 export function useClientes() {
   return useQuery({
@@ -10,7 +29,7 @@ export function useClientes() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clientes')
-        .select('id, nome, whatsapp, endereco, created_at')
+        .select(`id, ${CAMPOS_CLIENTE}, created_at`)
         .order('nome', { ascending: true })
         .range(0, 99)
       if (error) throw error
@@ -26,11 +45,7 @@ export function useAddCliente() {
     mutationFn: async (values) => {
       const { data, error } = await supabase
         .from('clientes')
-        .insert({
-          nome: values.nome,
-          whatsapp: values.whatsapp,
-          endereco: values.endereco || null,
-        })
+        .insert(dadosCliente(values))
         .select('id')
         .single()
       if (error) throw error
@@ -45,14 +60,7 @@ export function useUpdateCliente() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, values }) => {
-      const { error } = await supabase
-        .from('clientes')
-        .update({
-          nome: values.nome,
-          whatsapp: values.whatsapp,
-          endereco: values.endereco || null,
-        })
-        .eq('id', id)
+      const { error } = await supabase.from('clientes').update(dadosCliente(values)).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTES_KEY }),
@@ -108,7 +116,7 @@ export function useCliente(id) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clientes')
-        .select('id, nome, whatsapp, endereco')
+        .select(`id, ${CAMPOS_CLIENTE}`)
         .eq('id', id)
         .single()
       if (error) throw error

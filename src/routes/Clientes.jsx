@@ -9,9 +9,41 @@ import {
   useDeleteCliente,
 } from '../features/clientes/useClientes'
 import { clienteFormSchema } from '../features/clientes/schema'
+import { formatarEndereco } from '../features/clientes/formatarEndereco'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import DeleteButton from '../components/ui/DeleteButton'
+
+/** Valores em branco do formulário (usados ao abrir "novo"). */
+const VAZIO = {
+  nome: '',
+  whatsapp: '',
+  cep: '',
+  rua: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
+}
+
+/**
+ * Formata um telefone brasileiro (celular) enquanto digita: "(11) 99999-9999".
+ * Mantém só os dígitos (máx. 11) e vai montando os parênteses, espaço e traço.
+ * @param {string} valor
+ */
+function mascaraTelefone(valor) {
+  const d = String(valor).replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 2) return d ? `(${d}` : ''
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
+/** Formata o CEP enquanto digita: "01000000" -> "01000-000". */
+function mascaraCep(valor) {
+  const d = String(valor).replace(/\D/g, '').slice(0, 8)
+  return d.length <= 5 ? d : `${d.slice(0, 5)}-${d.slice(5)}`
+}
 
 /** Tela de clientes: cadastrar, editar, listar e apagar. */
 export default function Clientes() {
@@ -20,6 +52,8 @@ export default function Clientes() {
   const [erroDelete, setErroDelete] = useState('')
   const [busca, setBusca] = useState('')
   const [campoBusca, setCampoBusca] = useState('nome') // 'nome' ou 'telefone'
+  const [buscandoCep, setBuscandoCep] = useState(false)
+  const [erroCep, setErroCep] = useState('')
   const { data: clientes, isPending, isError, refetch } = useClientes()
   const addCliente = useAddCliente()
   const updateCliente = useUpdateCliente()
@@ -29,14 +63,49 @@ export default function Clientes() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(clienteFormSchema),
-    defaultValues: { nome: '', whatsapp: '', endereco: '' },
+    defaultValues: VAZIO,
   })
 
   const salvando = addCliente.isPending || updateCliente.isPending
   const erroSalvar = addCliente.isError || updateCliente.isError
+
+  /**
+   * Consulta o ViaCEP (API pública e gratuita) e preenche rua, bairro, cidade e
+   * estado. Os campos continuam editáveis — dá pra corrigir na mão depois.
+   */
+  async function buscarCep(cepDigitos) {
+    setErroCep('')
+    setBuscandoCep(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepDigitos}/json/`)
+      const data = await res.json()
+      if (data.erro) {
+        setErroCep('CEP não encontrado — preencha na mão.')
+        return
+      }
+      setValue('rua', data.logradouro || '')
+      setValue('bairro', data.bairro || '')
+      setValue('cidade', data.localidade || '')
+      setValue('estado', data.uf || '')
+    } catch {
+      setErroCep('Não foi possível buscar o CEP agora.')
+    } finally {
+      setBuscandoCep(false)
+    }
+  }
+
+  /** onChange do CEP: aplica a máscara e, ao completar 8 dígitos, busca. */
+  function aoDigitarCep(e) {
+    const mascarado = mascaraCep(e.target.value)
+    e.target.value = mascarado
+    const digitos = mascarado.replace(/\D/g, '')
+    if (digitos.length === 8) buscarCep(digitos)
+    else setErroCep('')
+  }
 
   // Filtra pelo campo escolhido. No telefone, compara só os dígitos, pra a
   // pontuação (parênteses, traço, espaço) não atrapalhar a busca.
@@ -52,17 +121,29 @@ export default function Clientes() {
 
   function abrirNovo() {
     setEditandoId(null)
+    setErroCep('')
     addCliente.reset()
     updateCliente.reset()
-    reset({ nome: '', whatsapp: '', endereco: '' })
+    reset(VAZIO)
     setAberto(true)
   }
 
   function abrirEdicao(c) {
     setEditandoId(c.id)
+    setErroCep('')
     addCliente.reset()
     updateCliente.reset()
-    reset({ nome: c.nome, whatsapp: c.whatsapp, endereco: c.endereco || '' })
+    reset({
+      nome: c.nome,
+      whatsapp: c.whatsapp,
+      cep: c.cep || '',
+      rua: c.rua || '',
+      numero: c.numero || '',
+      complemento: c.complemento || '',
+      bairro: c.bairro || '',
+      cidade: c.cidade || '',
+      estado: c.estado || '',
+    })
     setAberto(true)
   }
 
@@ -119,15 +200,53 @@ export default function Clientes() {
           <Input
             id="whatsapp"
             label="WhatsApp"
+            inputMode="numeric"
+            placeholder="(11) 99999-9999"
             error={errors.whatsapp?.message}
-            {...register('whatsapp')}
+            {...register('whatsapp', {
+              onChange: (e) => {
+                e.target.value = mascaraTelefone(e.target.value)
+              },
+            })}
           />
+          <p className="mt-2 font-serif text-lg text-ink sm:col-span-2">Endereço</p>
+
+          <div>
+            <Input
+              id="cep"
+              label="CEP"
+              inputMode="numeric"
+              placeholder="00000-000"
+              error={errors.cep?.message}
+              {...register('cep', { onChange: aoDigitarCep })}
+            />
+            {buscandoCep && <p className="mt-1 text-xs text-muted">Buscando endereço…</p>}
+            {erroCep && <p className="mt-1 text-xs text-danger">{erroCep}</p>}
+          </div>
+          <Input id="numero" label="Número" error={errors.numero?.message} {...register('numero')} />
+
+          <div className="sm:col-span-2">
+            <Input id="rua" label="Rua" error={errors.rua?.message} {...register('rua')} />
+          </div>
           <div className="sm:col-span-2">
             <Input
-              id="endereco"
-              label="Endereço (opcional)"
-              error={errors.endereco?.message}
-              {...register('endereco')}
+              id="complemento"
+              label="Complemento (opcional)"
+              error={errors.complemento?.message}
+              {...register('complemento')}
+            />
+          </div>
+
+          <Input id="bairro" label="Bairro" error={errors.bairro?.message} {...register('bairro')} />
+          <Input id="cidade" label="Cidade" error={errors.cidade?.message} {...register('cidade')} />
+          <div className="sm:col-span-2 sm:max-w-[8rem]">
+            <Input
+              id="estado"
+              label="Estado (UF)"
+              maxLength={2}
+              placeholder="SP"
+              error={errors.estado?.message}
+              {...register('estado')}
             />
           </div>
 
@@ -217,7 +336,7 @@ export default function Clientes() {
                       <p className="font-serif text-xl text-ink">{c.nome}</p>
                       <p className="text-sm text-muted">
                         {c.whatsapp}
-                        {c.endereco ? ` · ${c.endereco}` : ''}
+                        {formatarEndereco(c) ? ` · ${formatarEndereco(c)}` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">

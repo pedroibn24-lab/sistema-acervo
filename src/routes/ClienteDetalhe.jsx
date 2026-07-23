@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useCliente, useComprasCliente } from '../features/clientes/useClientes'
+import { useSacolinhaAberta } from '../features/vendas/useVendas'
+import { formatarEndereco } from '../features/clientes/formatarEndereco'
 
 const FILTROS_PAGAMENTO = [
   { valor: 'todos', label: 'Todos' },
@@ -52,7 +54,7 @@ export default function ClienteDetalhe() {
       {cliente.data && (
         <p className="mt-2 text-muted">
           {cliente.data.whatsapp}
-          {cliente.data.endereco ? ` · ${cliente.data.endereco}` : ''}
+          {formatarEndereco(cliente.data) ? ` · ${formatarEndereco(cliente.data)}` : ''}
         </p>
       )}
 
