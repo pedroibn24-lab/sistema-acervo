@@ -125,20 +125,24 @@ export function useCliente(id) {
   })
 }
 
-/** Histórico de compras de um cliente: todos os itens de todas as sacolinhas dele. */
-export function useComprasCliente(clienteId) {
+/**
+ * Histórico do cliente agrupado por SACOLINHA, com os itens de cada uma dentro.
+ * Cada sacolinha é um "pedido"; a mais recente primeiro. A em aberto (não enviada)
+ * vem junto, marcada pelo status_envio.
+ */
+export function useSacolinhasCliente(clienteId) {
   return useQuery({
-    queryKey: ['compras-cliente', clienteId],
+    queryKey: ['sacolinhas-cliente', clienteId],
     enabled: !!clienteId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('vendas_itens')
+        .from('sacolinhas')
         .select(
-          'id, tipo, ml, preco_venda, status_pagamento_perfume, created_at, perfumes(nome), sacolinhas!inner(status_envio)',
+          'id, status_envio, valor_frete, frete_pago, created_at, enviado_em, vendas_itens(id, tipo, ml, preco_venda, status_pagamento_perfume, perfumes(nome))',
         )
-        .eq('sacolinhas.cliente_id', clienteId)
+        .eq('cliente_id', clienteId)
         .order('created_at', { ascending: false })
-        .range(0, 199)
+        .range(0, 99)
       if (error) throw error
       return data
     },
