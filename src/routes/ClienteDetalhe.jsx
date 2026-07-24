@@ -22,6 +22,7 @@ export default function ClienteDetalhe() {
   const [filtroPagamento, setFiltroPagamento] = useState('todos')
   const cliente = useCliente(id)
   const compras = useComprasCliente(id)
+  const sacolinha = useSacolinhaAberta(id)
 
   const itens = compras.data ?? []
   const total = itens.reduce((soma, it) => soma + Number(it.preco_venda || 0), 0)
@@ -65,6 +66,43 @@ export default function ClienteDetalhe() {
             <p className={`mt-2 font-serif text-2xl ${c.cls}`}>{c.valor}</p>
           </div>
         ))}
+      </div>
+
+      <h2 className="mt-10 font-serif text-2xl text-ink">Sacolinha em aberto</h2>
+      <div className="mt-4">
+        {sacolinha.isPending ? (
+          <div className="skeleton h-24" />
+        ) : sacolinha.data ? (
+          <div className="card p-6">
+            <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+              <span className="text-muted">
+                Itens: <span className="text-ink">{sacolinha.data.qtd_decants} decants</span>
+              </span>
+              <span className="text-muted">
+                Total: <span className="text-ink">{brl(sacolinha.data.valor_itens)}</span>
+              </span>
+              {Number(sacolinha.data.valor_frete) > 0 && (
+                <span className="text-muted">
+                  Frete:{' '}
+                  <span className="text-ink">
+                    {brl(sacolinha.data.valor_frete)}{' '}
+                    {sacolinha.data.frete_pago ? '(pago)' : '(pendente)'}
+                  </span>
+                </span>
+              )}
+            </div>
+            <Link
+              to="/vendas"
+              className="mt-4 inline-block text-sm font-medium text-gold hover:underline"
+            >
+              Gerenciar em Vendas →
+            </Link>
+          </div>
+        ) : (
+          <div className="card p-8 text-center">
+            <p className="text-sm text-muted">Nenhuma sacolinha aberta.</p>
+          </div>
+        )}
       </div>
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
