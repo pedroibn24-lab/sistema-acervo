@@ -37,10 +37,11 @@ export function useAddEstoque() {
       // 2. soma o que foi adicionado (nunca deixa negativo)
       const novaQtd = Math.max(0, (atual?.quantidade ?? 0) + delta)
 
-      // 3. grava: se já existe a linha (owner_id, tipo), atualiza; senão, cria.
+      // 3. grava: estoque é compartilhado, uma linha por tipo. Atualiza se já
+      // existe (por tipo); senão, cria.
       const { error: e2 } = await supabase
         .from('estoque_insumos')
-        .upsert({ tipo, quantidade: novaQtd }, { onConflict: 'owner_id,tipo' })
+        .upsert({ tipo, quantidade: novaQtd }, { onConflict: 'tipo' })
       if (e2) throw e2
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ESTOQUE_KEY }),
